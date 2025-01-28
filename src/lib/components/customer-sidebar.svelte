@@ -1,10 +1,11 @@
 <script lang="ts">
     import Loader from "lucide-svelte/icons/loader";
     import Pill from "lucide-svelte/icons/pill";
-    import Inbox from "lucide-svelte/icons/inbox";
+    import LogOut from "lucide-svelte/icons/log-out";
     import History from "lucide-svelte/icons/history";
     import ShoppingCart from "lucide-svelte/icons/shopping-cart";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+    import { Button } from "$lib/components/ui/button/index.js";
     
     // Menu items.
     const items = [
@@ -32,9 +33,11 @@
    </script>
     
    <Sidebar.Root>
+    <Sidebar.Header class="justify-center items-center">
+       MEDIQUICK
+    </Sidebar.Header>
     <Sidebar.Content>
      <Sidebar.Group>
-      <Sidebar.GroupLabel>MEDIQUICK</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
        <Sidebar.Menu>
         {#each items as item (item.title)}
@@ -53,4 +56,7 @@
       </Sidebar.GroupContent>
      </Sidebar.Group>
     </Sidebar.Content>
+    <Sidebar.Footer>
+        <Button href="/" variant="ghost" class="items-start justify-start"><LogOut />Log out</Button>
+    </Sidebar.Footer>
    </Sidebar.Root>

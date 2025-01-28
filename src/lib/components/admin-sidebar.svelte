@@ -1,10 +1,12 @@
 <script lang="ts">
     import Package from "lucide-svelte/icons/package";
     import House from "lucide-svelte/icons/house";
+    import LogOut from "lucide-svelte/icons/log-out";
     import History from "lucide-svelte/icons/history";
     import ChartColumnBig from "lucide-svelte/icons/chart-column-big";
     import ShoppingCart from "lucide-svelte/icons/shopping-cart";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+    import { Button } from "$lib/components/ui/button/index.js";
     
     // Menu items.
     const items = [
@@ -32,9 +34,11 @@
 </script>
     
    <Sidebar.Root>
+    <Sidebar.Header class="justify-center items-center">
+        MEDIQUICK ADMIN
+     </Sidebar.Header>
     <Sidebar.Content>
      <Sidebar.Group>
-      <Sidebar.GroupLabel>MEDIQUICK (Admin Page)</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
        <Sidebar.Menu>
         {#each items as item (item.title)}
@@ -53,4 +57,7 @@
       </Sidebar.GroupContent>
      </Sidebar.Group>
     </Sidebar.Content>
+    <Sidebar.Footer>
+        <Button href="/admin-login" variant="ghost" class="items-start justify-start"><LogOut />Log out</Button>
+    </Sidebar.Footer>
    </Sidebar.Root>
