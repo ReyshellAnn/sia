@@ -1,20 +1,31 @@
 // src/lib/firebase.js
-import { initializeApp } from "firebase/app";
+import { deleteApp, getApp, getApps, initializeApp } from "firebase/app";
+// import firebase from "firebase/compat/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 // Your Firebase config
 const firebaseConfig = {
-    apiKey: "AIzaSyB3hjxlqNBHfM88l9Twt7ovLhdIpkDOuOY",
-    authDomain: "project-sia-43a92.firebaseapp.com",
-    projectId: "project-sia-43a92",
-    storageBucket: "project-sia-43a92.firebasestorage.app",
-    messagingSenderId: "281570105099",
-    appId: "1:281570105099:web:cda15a4d5b1e2a104c340e",
+    apiKey: import.meta.env.VITE_APIKEY,
+    authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_APP_ID,
     measurementId: "G-NGTYZ27NF4"
   };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let firebaseApp;
+if (!getApps().length) {
+    firebaseApp = initializeApp(firebaseConfig)
+} else{
+    firebaseApp = getApp()
+    deleteApp(firebaseApp)
+    firebaseApp = initializeApp(firebaseConfig)
+}
+// const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore
-export const db = getFirestore(app);
+export const db = getFirestore(firebaseApp)
+export const auth = getAuth(firebaseApp)
