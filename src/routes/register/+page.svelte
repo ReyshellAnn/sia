@@ -66,9 +66,7 @@
                     <Label for="confirm-password">Confirm Password</Label>
                     <Input id="confirm-password" type="password" bind:value={confirmPassword} required />
                 </div>
-                <button type="button" class="w-full" on:click={register}>
-                    Register
-                </button>
+                <Button href="/login" type="submit" class="w-full" onclick={register}>Register</Button>
             </div>
             <div class="mt-4 text-center text-sm">
                 Already have an account?

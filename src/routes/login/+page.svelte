@@ -68,7 +68,7 @@
                         Forgot your password?
                     </a>
                 </div>
-                <button type="button" class="w-full" on:click={login}>Login</button>
+                <Button href="/" type="submit" class="w-full" onclick={login}>Login</Button>
             </div>
             <div class="mt-4 text-center text-sm">
                 Don't have an account?
