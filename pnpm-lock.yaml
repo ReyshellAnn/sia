@@ -37,14 +37,17 @@ importers:
         specifier: ^10.4.20
         version: 10.4.20(postcss@8.5.1)
       bits-ui:
-        specifier: 1.0.0-next.78
-        version: 1.0.0-next.78(svelte@5.19.2)
+        specifier: 1.0.0-next.79
+        version: 1.0.0-next.79(svelte@5.19.2)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
       lucide-svelte:
         specifier: ^0.474.0
         version: 0.474.0(svelte@5.19.2)
+      mode-watcher:
+        specifier: ^0.5.1
+        version: 0.5.1(svelte@5.19.2)
       prettier:
         specifier: ^3.4.2
         version: 3.4.2
@@ -60,6 +63,9 @@ importers:
       svelte-check:
         specifier: ^4.0.0
         version: 4.1.4(svelte@5.19.2)(typescript@5.7.3)
+      svelte-sonner:
+        specifier: ^0.3.28
+        version: 0.3.28(svelte@5.19.2)
       tailwind-merge:
         specifier: ^2.6.0
         version: 2.6.0
@@ -790,8 +796,8 @@ packages:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
 
-  bits-ui@1.0.0-next.78:
-    resolution: {integrity: sha512-jZjG2ObZ/CNyCNaXecpItC7hRXqJAgEfMhr06/eNrf3wHiiPyhdcy4OkzLcJyxeOrDyj+xma8cZTd3JRWqJdAw==}
+  bits-ui@1.0.0-next.79:
+    resolution: {integrity: sha512-k8cLe5LTTpssBJJ3VdRl9fHa9BFKZAe01xZ/jT3CZArgbq+XqOiQBvhPXwMYV/SKK3EvaOl7lxw13GI61tGxHA==}
     engines: {node: '>=18', pnpm: '>=8.7.0'}
     peerDependencies:
       svelte: ^5.11.0
@@ -1103,6 +1109,11 @@ packages:
     resolution: {integrity: sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw==}
     engines: {node: '>=16 || 14 >=14.17'}
 
+  mode-watcher@0.5.1:
+    resolution: {integrity: sha512-adEC6T7TMX/kzQlaO/MtiQOSFekZfQu4MC+lXyoceQG+U5sKpJWZ4yKXqw846ExIuWJgedkOIPqAYYRk/xHm+w==}
+    peerDependencies:
+      svelte: ^4.0.0 || ^5.0.0-next.1
+
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
     engines: {node: '>=4'}
@@ -1332,8 +1343,8 @@ packages:
     peerDependencies:
       svelte: ^5.7.0
 
-  runed@0.22.0:
-    resolution: {integrity: sha512-ZWVXWhOr0P5xdNgtviz6D1ivLUDWKLCbeC5SUEJ3zBkqLReVqWHenFxMNFeFaiC5bfxhFxyxzyzB+98uYFtwdA==}
+  runed@0.23.1:
+    resolution: {integrity: sha512-h1ZDmin0LBoSMEZxvHOJbCWsUBz4099cjI+/rQ4FZystgOq294s5Rh+OEeu9HIObc8XQQEya23eAhJeal0VBuA==}
     peerDependencies:
       svelte: ^5.7.0
 
@@ -1411,6 +1422,11 @@ packages:
     peerDependencies:
       svelte: ^4.0.0 || ^5.0.0-next.0
       typescript: '>=5.0.0'
+
+  svelte-sonner@0.3.28:
+    resolution: {integrity: sha512-K3AmlySeFifF/cKgsYNv5uXqMVNln0NBAacOYgmkQStLa/UoU0LhfAACU6Gr+YYC8bOCHdVmFNoKuDbMEsppJg==}
+    peerDependencies:
+      svelte: ^3.0.0 || ^4.0.0 || ^5.0.0-next.1
 
   svelte-toolbelt@0.7.0:
     resolution: {integrity: sha512-i/Tv4NwAWWqJnK5H0F8y/ubDnogDYlwwyzKhrspTUFzrFuGnYshqd2g4/R43ds841wmaFiSW/HsdsdWhPOlrAA==}
@@ -2337,13 +2353,13 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
-  bits-ui@1.0.0-next.78(svelte@5.19.2):
+  bits-ui@1.0.0-next.79(svelte@5.19.2):
     dependencies:
       '@floating-ui/core': 1.6.9
       '@floating-ui/dom': 1.6.13
       '@internationalized/date': 3.7.0
       esm-env: 1.2.2
-      runed: 0.22.0(svelte@5.19.2)
+      runed: 0.23.1(svelte@5.19.2)
       svelte: 5.19.2
       svelte-toolbelt: 0.7.0(svelte@5.19.2)
 
@@ -2661,6 +2677,10 @@ snapshots:
 
   minipass@7.1.2: {}
 
+  mode-watcher@0.5.1(svelte@5.19.2):
+    dependencies:
+      svelte: 5.19.2
+
   mri@1.2.0: {}
 
   mrmime@2.0.0: {}
@@ -2834,7 +2854,7 @@ snapshots:
       esm-env: 1.2.2
       svelte: 5.19.2
 
-  runed@0.22.0(svelte@5.19.2):
+  runed@0.23.1(svelte@5.19.2):
     dependencies:
       esm-env: 1.2.2
       svelte: 5.19.2
@@ -2916,6 +2936,10 @@ snapshots:
       typescript: 5.7.3
     transitivePeerDependencies:
       - picomatch
+
+  svelte-sonner@0.3.28(svelte@5.19.2):
+    dependencies:
+      svelte: 5.19.2
 
   svelte-toolbelt@0.7.0(svelte@5.19.2):
     dependencies:

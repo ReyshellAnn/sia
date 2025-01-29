@@ -8,6 +8,7 @@
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Button } from "$lib/components/ui/button/index.js";
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import { Toaster } from 'svelte-sonner';
 	let { children } = $props();
 </script>
 
@@ -28,24 +29,9 @@
 					</Breadcrumb.Item> -->
 				</Breadcrumb.List>
 			</Breadcrumb.Root>
-
-			<div class="ml-auto">
-				<Tooltip.Provider delayDuration={0}>
-					<Tooltip.Root>
-						<Tooltip.Trigger class={`${buttonVariants({ variant: 'ghost' })} rounded-full hover:bg-transparent`}>
-							<Avatar.Root>
-								<Avatar.Image src="https://avatar.iran.liara.run/public/girl" alt="@shadcn" />
-								<Avatar.Fallback>CN</Avatar.Fallback>
-							</Avatar.Root>
-						</Tooltip.Trigger>
-						<Tooltip.Content align="end" alignOffset={15} class="flex flex-col p-0">
-							<Button href="/" variant="ghost" class="justify-start">Settings</Button>
-						</Tooltip.Content>
-					</Tooltip.Root>
-				</Tooltip.Provider>
-			</div>
 		</header>
 		<div class="flex flex-1 flex-col gap-4 p-4">
+			<Toaster />
 			{@render children?.()}
 		</div>
 	</Sidebar.Inset>
