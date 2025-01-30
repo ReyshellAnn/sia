@@ -40,7 +40,7 @@
 		stock: 0
 	});
 
-    let value = $state('');
+	let value = $state('');
 	let isAuthorized = $state(false); // Track if the user is authorized
 	let errorMessage = $state(''); // Handle errors
 	let isLoading = $state(true);
@@ -87,39 +87,45 @@
 		categories = value;
 	});
 
-    const handleSubmit = async () => {
-	if (
-		!medicine.name ||
-		!medicine.description ||
-		!medicine.price ||
-		!medicine.stock ||
-		!medicine.category
-	) {
-		toast.error('Please fill in all the fields.');
-		errorMessage = 'Please fill in all the fields.';
-		return;
-	}
-	try {
-		// Get the selected category object based on the value
-		const selectedCategory = categories.find((cat) => cat.value === medicine.category);
-		const categoryLabel = selectedCategory ? selectedCategory.label : '';
+	let isSubmitLoading = $state(false); // Start with false
+	
+	const handleSubmit = async () => {
+		if (
+			!medicine.name ||
+			!medicine.description ||
+			!medicine.price ||
+			!medicine.stock ||
+			!medicine.category
+		) {
+			toast.error('Please fill in all the fields.');
+			errorMessage = 'Please fill in all the fields.';
+			return;
+		}
+		isSubmitLoading = true; // Set loading state to true before starting
 
-		// Update the medicine object with the category label
-		medicine.category = categoryLabel;
+		try {
+			// Get the selected category object based on the value
+			const selectedCategory = categories.find((cat) => cat.value === medicine.category);
+			const categoryLabel = selectedCategory ? selectedCategory.label : '';
 
-		// Exclude the 'id' field from the update payload
-		const { id, ...medicineData } = medicine;
+			// Update the medicine object with the category label
+			medicine.category = categoryLabel;
 
-		// Update the medicine document in Firestore
-		const medicineRef = doc(db, 'medicines', id);
-		await updateDoc(medicineRef, { ...medicineData });
+			// Exclude the 'id' field from the update payload
+			const { id, ...medicineData } = medicine;
 
-		toast.success('Medicine updated successfully!');
-	} catch (error) {
-		console.error('Error updating medicine:', error);
-		toast.error('Error updating medicine.');
-	}
-};
+			// Update the medicine document in Firestore
+			const medicineRef = doc(db, 'medicines', id);
+			await updateDoc(medicineRef, { ...medicineData });
+
+			toast.success('Medicine updated successfully!');
+		} catch (error) {
+			console.error('Error updating medicine:', error);
+			toast.error('Error updating medicine.');
+		} finally {
+			isSubmitLoading = false; // Ensure isLoading is reset no matter what
+		}
+	};
 
 	// Fetch categories from Firestore on mount
 	onMount(async () => {
@@ -152,6 +158,12 @@
 
 			if (docSnap.exists()) {
 				medicine = { id: docSnap.id, ...docSnap.data() } as Medicine;
+
+				// Convert the stored label to value for select dropdown
+				const selectedCategory = categories.find((cat) => cat.label === medicine.category);
+				if (selectedCategory) {
+					medicine.category = selectedCategory.value; // Set value for select dropdown
+				}
 			} else {
 				errorMessage = 'Medicine not found.';
 			}
@@ -176,7 +188,15 @@
 			</div>
 
 			<div class="flex flex-row space-x-2">
-				<Button onclick={handleSubmit}><Check />Save Changes</Button>
+				<Button onclick={handleSubmit} disabled={isSubmitLoading}>
+					{#if isSubmitLoading}
+						<span
+							class="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"
+						></span>
+					{:else}
+						<Check />Submit
+					{/if}
+				</Button>
 			</div>
 		</header>
 		<div class="flex flex-row space-x-8 px-20">
@@ -231,9 +251,9 @@
 						<span class="text-lg font-medium">Category</span>
 						<Select.Root type="single" name="medicineCategory" bind:value={medicine.category}>
 							<Select.Trigger class="w-full">
-                                {medicine.category
-                                    ? categories.find((cat) => cat.value === medicine.category)?.label
-                                    : 'Select a category'}
+								{medicine.category
+									? categories.find((cat) => cat.value === medicine.category)?.label
+									: 'Select a category'}
 							</Select.Trigger>
 
 							<Select.Content>

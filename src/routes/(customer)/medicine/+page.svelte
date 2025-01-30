@@ -1,1 +1,0 @@
-this is specific medicine that was clicked

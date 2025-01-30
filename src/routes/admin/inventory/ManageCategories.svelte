@@ -58,14 +58,15 @@
 			const addedCategoryLabel = newCategory.label;
 
 			categories = [...categories, { value: newCategory.value, label: newCategory.label }];
-			newCategory = { value: '', label: '' }; // Reset after adding
 
 			toast.success(`${addedCategoryLabel} has been added`);
 
-			categoriesStore.update((categories) => [
-				...categories,
-				{ value: newCategory.value, label: newCategory.label }
-			]);
+			const addedCategory = { value: newCategory.value, label: newCategory.label };
+
+			categoriesStore.update((categories) => [...categories, addedCategory]);
+
+			// Reset after adding
+			newCategory = { value: '', label: '' };
 		} catch (error) {
 			console.error('Error adding category:', error);
 			toast.error('Failed to add category. Please try again.');

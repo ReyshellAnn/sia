@@ -1,41 +1,46 @@
-<script lang="ts">
-    import { onMount } from "svelte";
-    import { collection, getDocs } from "firebase/firestore";
-    import { db } from "$lib/firebase";
-  
-    let documents: any[] = [];
-    let error: string | null = null;
-  
+  <script lang="ts">
+    import { onMount } from 'svelte';
+    import { collection, getDocs } from 'firebase/firestore';
+    import { db } from '$lib/firebase';
+    import * as Card from '$lib/components/ui/card/index.js';
+    import { Button } from '$lib/components/ui/button/index.js';
+    import { goto } from '$app/navigation';  // Use goto from $app/navigation
+
+    let medicines: any[] = [];
+
+    // Fetch medicines from Firestore
     onMount(async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "test"));
-        documents = querySnapshot.docs.map((doc) => ({
+        const querySnapshot = await getDocs(collection(db, 'medicines'));
+        medicines = querySnapshot.docs.map(doc => ({
           id: doc.id,
-          ...doc.data(),
+          name: doc.data().name,  // Adjust to match your field names
+          price: doc.data().price, // Adjust to match your field names
+          image: '/placeholder.png' // Use a placeholder or field from Firestore if available
         }));
-      } catch (err) {
-        // Safely cast 'err' to 'Error' to access the 'message' property
-        if (err instanceof Error) {
-          error = err.message;
-        } else {
-          error = String(err); // Fallback for non-Error types
-        }
-        console.error("Error fetching Firestore data:", err);
+      } catch (error) {
+        console.error('Error fetching medicines:', error);
       }
     });
+
+    // Handle medicine click
+    const goToMedicine = (id: string) => {
+      goto(`/medicine/${id}`);  // Navigate to the /medicine page with the selected id
+    };
   </script>
-  this is medicine page
-  <h1>Firestore Test</h1>
-  
-  {#if error}
-    <p style="color: red;">Error: {error}</p>
-  {/if}
-  
-  <ul>
-    {#each documents as doc}
-      <li>
-        <strong>{doc.name}</strong>: {doc.value}
-      </li>
+
+  <div class="flex flex-wrap gap-4">
+    {#each medicines as medicine}
+      <Card.Root class="w-72" onclick={() => goToMedicine(medicine.id)}>
+        <Card.Content class="p-0 mx-auto flex items-center justify-center">
+          <img src={medicine.image} alt="Medicine" class="w-64" />
+        </Card.Content>
+        
+        <Card.Footer class="flex flex-col items-start p-2 space-y-3">
+          <span class="text-lg font-normal">{medicine.name}</span>
+          <span class="text-lg font-medium">₱{medicine.price}</span>
+          <Button class="w-full">Add To Cart</Button>
+        </Card.Footer>
+      </Card.Root>
     {/each}
-  </ul>
-  
+  </div>
