@@ -6,8 +6,8 @@
 	import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-    import { auth } from '$lib/firebase'; // Import Firebase Auth
-	import { signOut } from 'firebase/auth'; // Firebase signOut method
+	import { user } from '$lib/stores/authStore'; // Import the user store
+	import { auth } from '$lib/firebase';
 
 
 	// Menu items.
@@ -34,16 +34,12 @@
 		}
 	];
 
-	// Logout function
-	async function logout() {
-		try {
-			await signOut(auth); // Sign out the user
-			console.log('User logged out successfully.');
-			window.location.href = '/'; // Redirect to the login page
-		} catch (error) {
-			console.error('Error during logout:', error);
-		}
-	}
+	// Function to handle logout
+	const handleLogout = async () => {
+		await auth.signOut();
+		// Redirect to login page or perform other actions after logout
+		window.location.href = '/';
+	};
 </script>
 
 <Sidebar.Root>
@@ -68,10 +64,12 @@
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
 	</Sidebar.Content>
+	{#if $user}
 	<Sidebar.Footer>
-		<Button variant="ghost" class="items-start justify-start" onclick={logout}>
+		<Button variant="ghost" class="items-start justify-start" onclick={handleLogout}>
 			<LogOut />
 			Log out
 		</Button>
 	</Sidebar.Footer>
+	{/if}
 </Sidebar.Root>

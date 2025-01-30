@@ -72,27 +72,28 @@
 	};
 
 	const proceedToPickup = async () => {
-		try {
-			// Move items to the pickup collection
-			const batch = writeBatch(db); // Firebase batch operation to ensure atomicity
+    try {
+        // Move items to the pickup collection
+        const batch = writeBatch(db); // Firebase batch operation to ensure atomicity
 
-			// Add each item from cart to pickup collection
-			for (const item of cartItems) {
-				const pickupRef = doc(collection(db, 'pickup'));
-				batch.set(pickupRef, item); // Add item to pickup collection
-				const cartRef = doc(db, 'cart', item.id);
-				batch.delete(cartRef); // Remove item from cart
-			}
+        // Add each item from cart to pickup collection
+        for (const item of cartItems) {
+            const pickupRef = doc(db, 'pickup', item.id); // Use item.id as document ID
+            batch.set(pickupRef, item); // Add item to pickup collection with the same ID as in cart
+            const cartRef = doc(db, 'cart', item.id);
+            batch.delete(cartRef); // Remove item from cart
+        }
 
-			await batch.commit(); // Commit the batch operation
-			console.log('Items moved to pickup and removed from cart');
+        await batch.commit(); // Commit the batch operation
+        console.log('Items moved to pickup and removed from cart');
 
-			// Redirect to pickup page
-			goto('/pending-pickup');
-		} catch (error) {
-			console.error('Error proceeding to pickup:', error);
-		}
-	};
+        // Redirect to pickup page
+        goto('/pending-pickup');
+    } catch (error) {
+        console.error('Error proceeding to pickup:', error);
+    }
+};
+
 </script>
 
 <div class="flex flex-wrap gap-12">

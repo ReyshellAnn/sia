@@ -1,55 +1,164 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { doc, getDoc } from "firebase/firestore";
-    import { auth } from "$lib/firebase";
-    import { db } from "$lib/firebase"; // Firestore reference
-    import { onAuthStateChanged } from "firebase/auth"; // Firebase Auth state
+	import { onMount } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
+	import { toast } from 'svelte-sonner';
 
-    let isAuthorized = false;  // This will track if the user is authorized to view the content
-    let errorMessage = "";     // Optional: Handle error if any
+	import { collection, doc, getDoc, getDocs } from 'firebase/firestore'; // Import Firestore functions
+	import { auth, db } from '$lib/firebase'; // Firebase Auth and Firestore references
+	import { onAuthStateChanged } from 'firebase/auth'; // Firebase Auth state
 
-    onMount(() => {
-        // Immediately check if the user is authenticated before rendering any content
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                // If no user is authenticated, redirect immediately to homepage
-                console.log("No user is authenticated. Redirecting to homepage.");
-                window.location.href = "/"; // Redirect to homepage
-                return;
-            }
+	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 
-            try {
-                // Get user role from Firestore (assuming the user document is under 'users/{userId}')
-                const userDocRef = doc(db, "users", user.uid);
-                const userDoc = await getDoc(userDocRef);
+	import * as Pagination from '$lib/components/ui/pagination/index.js';
+	import * as Table from '$lib/components/ui/table/index.js';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
+	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import Plus from 'lucide-svelte/icons/plus';
+	import Trash2 from 'lucide-svelte/icons/trash-2';
+	import Pencil from 'lucide-svelte/icons/pencil';
+	import LoaderCircle from 'lucide-svelte/icons/loader-circle';
 
-                    // If user is not an admin, set isAuthorized to false and redirect to homepage
-                    if (userData?.role !== 'admin') {
-                        console.log("User is not an admin. Redirecting to homepage.");
-                        window.location.href = "/"; // Redirect to homepage or other page
-                    } else {
-                        console.log("User is authenticated as an admin.");
-                        isAuthorized = true; // Allow access to admin content
-                    }
-                } else {
-                    console.error("User document not found in Firestore.");
-                    window.location.href = "/login"; // Redirect to login if user doc not found
-                }
-            } catch (error) {
-                console.error("Error fetching user role:", error);
-                errorMessage = "An error occurred while checking user role.";
-                window.location.href = "/"; // Fallback to homepage if error occurs
-            }
-        });
-    });
+	const isDesktop = new MediaQuery('(min-width: 768px)');
+
+	const count = 20;
+	const perPage = $derived(isDesktop.current ? 3 : 8);
+	const siblingCount = $derived(isDesktop.current ? 1 : 0);
+
+	// Define a type for the order history data
+	interface OrderHistory {
+		id: string;
+		medicineId: string;
+		name: string;
+		price: number;
+		quantity: number;
+		status: string;
+		createdAt: string;
+		completedAt: string;
+		userId: string;
+	}
+
+	// Declare reactive variables
+	let isAuthorized = $state(false); // Track if the user is authorized
+	let errorMessage = $state(''); // Handle errors
+	let orders = $state<OrderHistory[]>([]); // Store order history data from Firestore
+	let selectedRow: OrderHistory | null = null; // Track the selected row
+	let isLoading = $state(false); // Loading state
+
+	onMount(async () => {
+		// Check if the user is authenticated
+		onAuthStateChanged(auth, async (user) => {
+			if (!user) {
+				console.log('No user is authenticated. Redirecting to homepage.');
+				window.location.href = '/'; // Redirect to homepage
+				return;
+			}
+
+			try {
+				// Get user role from Firestore
+				const userDocRef = doc(db, 'users', user.uid);
+				const userDoc = await getDoc(userDocRef);
+
+				if (userDoc.exists()) {
+					const userData = userDoc.data();
+
+					// Check if the user is an admin
+					if (userData?.role !== 'admin') {
+						console.log('User is not an admin. Redirecting to homepage.');
+						window.location.href = '/'; // Redirect to homepage
+					} else {
+						console.log('User is authenticated as an admin.');
+						isAuthorized = true; // Allow access to admin content
+
+						// Fetch order history data from Firestore
+						const querySnapshot = await getDocs(collection(db, 'orderhistory'));
+						orders = querySnapshot.docs.map((doc) => ({
+							id: doc.id, // Include the document ID
+							...doc.data() // Spread the document data
+						})) as OrderHistory[];
+					}
+				} else {
+					console.error('User document not found in Firestore.');
+					window.location.href = '/login'; // Redirect to login
+				}
+			} catch (error) {
+				console.error('Error fetching user role or order history:', error);
+				errorMessage = 'An error occurred while fetching data.';
+				window.location.href = '/'; // Fallback to homepage
+			}
+		});
+	});
 </script>
 
-<!-- The content will not be rendered at all until authentication check is complete -->
+<!-- Render content only if the user is authorized -->
 {#if isAuthorized}
-  <h1>Order History</h1> <!-- Content shown only to authorized users -->
+	<header class="flex flex-row justify-between px-2">
+		<span class="text-2xl font-semibold">Order History</span>
+	</header>
+
+	<Table.Root>
+		<Table.Header>
+			<Table.Row>
+				<Table.Head>Order ID</Table.Head>
+				<Table.Head>Medicine ID</Table.Head>
+				<Table.Head>Name</Table.Head>
+				<Table.Head>Price</Table.Head>
+				<Table.Head>Quantity</Table.Head>
+				<Table.Head>Status</Table.Head>
+				<Table.Head>Completed At</Table.Head>
+				<Table.Head>User ID</Table.Head>
+			</Table.Row>
+		</Table.Header>
+		<Table.Body>
+			{#each orders as order (order.id)}
+				<Table.Row>
+					<Table.Cell class="font-medium">{order.id}</Table.Cell>
+					<Table.Cell>{order.medicineId}</Table.Cell>
+					<Table.Cell>{order.name}</Table.Cell>
+					<Table.Cell>${order.price.toFixed(2)}</Table.Cell>
+					<Table.Cell>{order.quantity}</Table.Cell>
+					<Table.Cell>{order.status}</Table.Cell>
+					<Table.Cell>{new Date(order.createdAt).toLocaleString()}</Table.Cell>
+					<Table.Cell>{order.userId}</Table.Cell>
+				</Table.Row>
+			{/each}
+		</Table.Body>
+	</Table.Root>
+
+	<Pagination.Root {count} {perPage} {siblingCount} class="items-end">
+		{#snippet children({ pages, currentPage })} 
+			<Pagination.Content>
+				<Pagination.Item>
+					<Pagination.PrevButton>
+						<ChevronLeft class="size-4" />
+						<span class="hidden sm:block">Previous</span>
+					</Pagination.PrevButton>
+				</Pagination.Item>
+				{#each pages as page (page.key)}
+					{#if page.type === 'ellipsis'}
+						<Pagination.Item>
+							<Pagination.Ellipsis />
+						</Pagination.Item>
+					{:else}
+						<Pagination.Item>
+							<Pagination.Link {page} isActive={currentPage === page.value}>
+								{page.value}
+							</Pagination.Link>
+						</Pagination.Item>
+					{/if}
+				{/each}
+				<Pagination.Item>
+					<Pagination.NextButton>
+						<span class="hidden sm:block">Next</span>
+						<ChevronRight class="size-4" />
+					</Pagination.NextButton>
+				</Pagination.Item>
+			</Pagination.Content>
+		{/snippet}
+	</Pagination.Root>
 {:else if errorMessage}
-  <p style="color: red;">{errorMessage}</p> <!-- Optional: Display error message if there is one -->
+	<p style="color: red;">{errorMessage}</p>
+	<!-- Display error message if any -->
 {/if}

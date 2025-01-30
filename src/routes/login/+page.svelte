@@ -3,46 +3,34 @@
     import * as Card from "$lib/components/ui/card/index.js";
     import { Input } from "$lib/components/ui/input/index.js";
     import { Label } from "$lib/components/ui/label/index.js";
-    import '../../app.css'
+    import '../../app.css';
     import { auth } from '$lib/firebase'; // Firebase config file
     import { signInWithEmailAndPassword } from "firebase/auth";
-    import { onAuthStateChanged } from 'firebase/auth';
-
+    import { goto } from '$app/navigation';
+  
     let email = '';
     let password = '';
     let errorMessage = '';
-
+  
     async function login(event: Event) {
-    event.preventDefault();
-
-    try {
+      event.preventDefault();
+  
+      try {
         // Sign in with Firebase Auth
         await signInWithEmailAndPassword(auth, email, password);
-
-        // Log success message
-        console.log('User authenticated successfully:', email);
-
-        // Check if the user is authenticated after login
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                console.log('User is authenticated:', user.email);
-                // Redirect to the dashboard or home page
-                window.location.href = "/";
-            } else {
-                console.log('No user is authenticated');
-            }
-        });
-
-    } catch (error) {
+  
+        // Redirect to the dashboard or home page after successful login
+        goto('/');
+  
+      } catch (error) {
         if (error instanceof Error) {
-            errorMessage = error.message; // Display the error message
+          errorMessage = error.message; // Display the error message
         } else {
-            errorMessage = "An unexpected error occurred.";
+          errorMessage = "An unexpected error occurred.";
         }
+      }
     }
-}
-
-</script>
+  </script>
 
 <div class="flex h-screen w-full items-center justify-center px-4 bg-blue-200">
     <Card.Root class="mx-auto max-w-sm">
