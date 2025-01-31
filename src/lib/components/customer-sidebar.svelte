@@ -37,8 +37,6 @@
 	// Function to handle logout
 	const handleLogout = async () => {
 		await auth.signOut();
-		// Redirect to login page or perform other actions after logout
-		window.location.href = '/';
 	};
 </script>
 
@@ -66,10 +64,11 @@
 	</Sidebar.Content>
 	{#if $user}
 	<Sidebar.Footer>
-		<Button variant="ghost" class="items-start justify-start" onclick={handleLogout}>
-			<LogOut />
-			Log out
-		</Button>
+		<Button variant="ghost" class="flex items-start justify-start p-2" onclick={handleLogout}>
+			<LogOut class="my-auto" />
+			<span class="my-auto">Log out</span>
+		  </Button>
+		  
 	</Sidebar.Footer>
 	{/if}
 </Sidebar.Root>

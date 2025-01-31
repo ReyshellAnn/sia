@@ -22,8 +22,6 @@
 	// Function to handle logout
 	const handleLogout = async () => {
 		await auth.signOut();
-		// Redirect to login page or perform other actions after logout
-		window.location.href = '/';
 	};
 </script>
 
@@ -58,7 +56,7 @@
 						</Tooltip.Trigger>
 						<Tooltip.Content align="end" alignOffset={15} class="flex flex-col p-0">
 							{#if $user}
-								<span class="p-2 text-sm font-medium">Hi, {$user.email}</span>
+								<span class="p-2 text-sm font-medium">Hi, {$user.fullName}</span>
 								<Button href="/settings" variant="ghost" class="justify-start">
 									<Settings />Settings
 								</Button>

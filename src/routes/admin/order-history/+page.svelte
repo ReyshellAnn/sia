@@ -37,6 +37,7 @@
 		status: string;
 		createdAt: string;
 		completedAt: string;
+		fullName: string;
 		userId: string;
 	}
 
@@ -102,26 +103,24 @@
 		<Table.Header>
 			<Table.Row>
 				<Table.Head>Order ID</Table.Head>
-				<Table.Head>Medicine ID</Table.Head>
 				<Table.Head>Name</Table.Head>
 				<Table.Head>Price</Table.Head>
 				<Table.Head>Quantity</Table.Head>
 				<Table.Head>Status</Table.Head>
-				<Table.Head>Completed At</Table.Head>
-				<Table.Head>User ID</Table.Head>
+				<Table.Head>Date</Table.Head>
+				<Table.Head>Customer</Table.Head>
 			</Table.Row>
 		</Table.Header>
 		<Table.Body>
 			{#each orders as order (order.id)}
 				<Table.Row>
 					<Table.Cell class="font-medium">{order.id}</Table.Cell>
-					<Table.Cell>{order.medicineId}</Table.Cell>
 					<Table.Cell>{order.name}</Table.Cell>
-					<Table.Cell>${order.price.toFixed(2)}</Table.Cell>
+					<Table.Cell>₱{order.price.toFixed(2)}</Table.Cell>
 					<Table.Cell>{order.quantity}</Table.Cell>
 					<Table.Cell>{order.status}</Table.Cell>
 					<Table.Cell>{new Date(order.createdAt).toLocaleString()}</Table.Cell>
-					<Table.Cell>{order.userId}</Table.Cell>
+					<Table.Cell>{order.fullName}</Table.Cell>
 				</Table.Row>
 			{/each}
 		</Table.Body>

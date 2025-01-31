@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
+  import { collection, getDocs, addDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
   import { db } from '$lib/firebase';
   import * as Card from '$lib/components/ui/card/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
@@ -52,6 +52,17 @@
   }
 
   try {
+    // Fetch the user's full name from Firestore
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+      console.error("User document not found");
+      return;
+    }
+
+    const fullName = userDocSnap.data().fullName;  // Assuming fullName is in Firestore
+
     // Query the cart to check if the product already exists
     const querySnapshot = await getDocs(collection(db, 'cart'));
     const existingItem = querySnapshot.docs.find(doc => doc.data().medicineId === medicine.id && doc.data().userId === user.uid);
@@ -67,6 +78,7 @@
       // If the product is not in the cart, add a new item
       await addDoc(collection(db, 'cart'), {
         userId: user.uid,
+        fullName: fullName,  // Add fullName to the cart item
         medicineId: medicine.id,
         name: medicine.name,
         price: medicine.price,
@@ -79,13 +91,14 @@
     console.error('Error adding to cart:', error);
   }
 };
+
 </script>
 
 
 <div class="flex flex-wrap gap-4">
   {#each medicines as medicine}
     <Card.Root class="w-72">
-      <Card.Content class="p-0 mx-auto flex items-center justify-center" onclick={() => goToMedicine(medicine.id)}> 
+      <Card.Content class="p-0 mx-auto flex items-center justify-center hover:cursor-pointer hover:bg-primary-foreground" onclick={() => goToMedicine(medicine.id)}> 
         <img src={medicine.image} alt="Medicine" class="w-64" />
       </Card.Content>
       

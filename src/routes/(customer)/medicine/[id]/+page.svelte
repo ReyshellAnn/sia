@@ -102,7 +102,7 @@
         <Carousel.Item class="pl-1 md:basis-1/3 lg:basis-1/4" onclick={() => goToMedicine(medicine.id)}>
           <div class="p-1">
             <Card.Root>
-              <Card.Content class="flex aspect-square items-center justify-center p-6">
+              <Card.Content class="flex aspect-square items-center justify-center p-6 hover:cursor-pointer hover:bg-primary-foreground">
                 <!-- Product Image -->
                 <img src={medicine.image} alt="Medicine" class="w-64" />
               </Card.Content>

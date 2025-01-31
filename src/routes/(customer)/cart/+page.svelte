@@ -1,6 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { collection, getDocs, query, where, doc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
+	import {
+		collection,
+		getDocs,
+		query,
+		where,
+		doc,
+		deleteDoc,
+		updateDoc,
+		writeBatch
+	} from 'firebase/firestore';
 	import { db } from '$lib/firebase';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -13,8 +22,50 @@
 	import { auth } from '$lib/firebase'; // Import Firebase auth
 	import { onAuthStateChanged } from 'firebase/auth'; // To track user auth state
 
-	let user = page.data.user; // Access logged-in user from page state
-	let cartItems: any[] = []; // Array to store cart items
+	let user;
+	let cartItems: any[] = [];
+	let pickupOption = 'now'; // Default selection
+	let scheduledPickupTime = ''; // Empty by default
+
+	// Generate time slots from 8:00 AM to 8:00 PM
+	const timeSlots: any[] = [];
+	for (let hour = 8; hour <= 20; hour++) {
+		let formattedHour = hour > 12 ? hour - 12 : hour;
+		let suffix = hour >= 12 ? 'PM' : 'AM';
+		timeSlots.push({
+			label: `${formattedHour}:00 ${suffix}`,
+			value: `${formattedHour}:00 ${suffix}`
+		});
+	}
+
+	// Disable past times based on current time
+	const getDisabledTimes = () => {
+		const currentTime = new Date();
+		const currentHour = currentTime.getHours();
+		const currentMinutes = currentTime.getMinutes();
+		const disabledTimes = [];
+
+		// Loop through time slots and find which are in the past
+		for (let i = 0; i < timeSlots.length; i++) {
+			const timeSlot = timeSlots[i];
+			const [hour, minutes] = timeSlot.value.split(':');
+			let slotHour = parseInt(hour);
+			const isPM = timeSlot.value.includes('PM');
+
+			if (isPM && slotHour < 12) slotHour += 12; // Convert to 24-hour format for comparison
+
+			// If the slot time is before the current time, disable it
+			if (
+				slotHour < currentHour ||
+				(slotHour === currentHour && parseInt(minutes) <= currentMinutes)
+			) {
+				disabledTimes.push(timeSlot.value);
+			}
+		}
+		return disabledTimes;
+	};
+
+	const disabledTimes = getDisabledTimes();
 
 	// Ensure user is authenticated and fetch cart items after authentication
 	onMount(() => {
@@ -71,29 +122,44 @@
 		}
 	};
 
+	// Function to clear the cart
+	const clearCart = async () => {
+		try {
+			const batch = writeBatch(db);
+			for (const item of cartItems) {
+				const itemRef = doc(db, 'cart', item.id);
+				batch.delete(itemRef);
+			}
+			await batch.commit();
+			cartItems = []; // Clear local state
+			console.log('Cart has been cleared');
+		} catch (error) {
+			console.error('Error clearing cart:', error);
+		}
+	};
+
 	const proceedToPickup = async () => {
-    try {
-        // Move items to the pickup collection
-        const batch = writeBatch(db); // Firebase batch operation to ensure atomicity
-
-        // Add each item from cart to pickup collection
-        for (const item of cartItems) {
-            const pickupRef = doc(db, 'pickup', item.id); // Use item.id as document ID
-            batch.set(pickupRef, item); // Add item to pickup collection with the same ID as in cart
-            const cartRef = doc(db, 'cart', item.id);
-            batch.delete(cartRef); // Remove item from cart
-        }
-
-        await batch.commit(); // Commit the batch operation
-        console.log('Items moved to pickup and removed from cart');
-
-        // Redirect to pickup page
-        goto('/pending-pickup');
-    } catch (error) {
-        console.error('Error proceeding to pickup:', error);
-    }
-};
-
+		try {
+			const batch = writeBatch(db);
+			for (const item of cartItems) {
+				const pickupRef = doc(db, 'pickup', item.id);
+				batch.set(pickupRef, {
+					...item,
+					pickupTime: pickupOption === 'now' ? 'ASAP' : scheduledPickupTime
+				});
+				const cartRef = doc(db, 'cart', item.id);
+				batch.delete(cartRef);
+			}
+			await batch.commit();
+			console.log(
+				'Items moved to pickup with pickup time:',
+				pickupOption === 'now' ? 'ASAP' : scheduledPickupTime
+			);
+			goto('/pending-pickup');
+		} catch (error) {
+			console.error('Error proceeding to pickup:', error);
+		}
+	};
 </script>
 
 <div class="flex flex-wrap gap-12">
@@ -149,17 +215,46 @@
 		<Card.Content class="flex flex-col space-y-3">
 			<span class="text-xl font-medium">Cart Total</span>
 			<Separator />
+
 			<div class="flex justify-between">
 				<span class="text-lg font-medium">Total</span>
 				<span class="text-lg font-medium text-orange-500">
 					₱{cartItems.reduce((total, item) => total + item.price * item.quantity, 0)}
 				</span>
 			</div>
-			<Button onclick={proceedToPickup}>Proceed to Pickup</Button>
+			<span class="font-medium">Select Pickup Option:</span>
+			<select bind:value={pickupOption} class="rounded border p-2">
+				<option value="now">Pickup Now</option>
+				<option value="later">Schedule Pickup</option>
+			</select>
+
+			{#if pickupOption === 'later'}
+				<div>
+					<span class="font-medium">Select Pickup Time:</span>
+					<select bind:value={scheduledPickupTime} class="rounded border p-2">
+						{#each timeSlots as time}
+							<option value={time.value} disabled={disabledTimes.includes(time.value)}>
+								{time.label}
+							</option>
+						{/each}
+					</select>
+				</div>
+			{/if}
+
+			<Button
+				onclick={proceedToPickup}
+				disabled={(pickupOption === 'later' && !scheduledPickupTime) || cartItems.length === 0}
+			>
+				Proceed to Pickup
+			</Button>
 			<Button variant="secondary" onclick={() => goto('/')}>
 				<ArrowLeft />Return to Shopping
 			</Button>
-			<Button variant="secondary"><Trash2 />Clear Cart</Button>
+			<Button variant="secondary" disabled={cartItems.length === 0} onclick={clearCart}>
+				<Trash2 />Clear Cart
+			</Button>
 		</Card.Content>
 	</Card.Root>
 </div>
+
+<div class="flex flex-col space-y-4"></div>

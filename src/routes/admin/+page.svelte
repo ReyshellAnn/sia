@@ -1,186 +1,223 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import {
-		doc,
-		getDoc,
-		query,
-		collection,
-		getDocs,
-		deleteDoc,
-		setDoc,
-		where
+	  doc,
+	  getDoc,
+	  query,
+	  collection,
+	  getDocs,
+	  deleteDoc,
+	  setDoc,
+	  where
 	} from 'firebase/firestore';
 	import { auth, db } from '$lib/firebase'; // Firebase Auth and Firestore
 	import { onAuthStateChanged } from 'firebase/auth'; // Firebase Auth state
 	import { goto } from '$app/navigation'; // For navigation
 	import { Button } from '$lib/components/ui/button/index.js';
-
-	let isAuthorized = false; // Track if the user is authorized to view the content
-	let pickupItems: any[] = []; // Array to store pickup items
-	let errorMessage = ''; // To handle error message
-	let cancelReason = ''; // To store cancel reason
-
+	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Avatar from '$lib/components/ui/avatar/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import Check from 'lucide-svelte/icons/check';
+	import X from 'lucide-svelte/icons/x';
+	import Separator from '$lib/components/ui/separator/separator.svelte';
+  
+	let isAuthorized = false;
+	let pickupItems: any[] = [];
+	let errorMessage = '';
+	let cancelReason = '';
+  
 	// Fetch pickup items and check user authorization
 	onMount(() => {
-		onAuthStateChanged(auth, async (user) => {
-			if (!user) {
-				console.log('No user is authenticated. Redirecting to homepage.');
-				window.location.href = '/'; // Redirect to homepage
-				return;
+	  onAuthStateChanged(auth, async (user) => {
+		if (!user) {
+		  console.log('No user is authenticated. Redirecting to homepage.');
+		  window.location.href = '/'; // Redirect to homepage
+		  return;
+		}
+  
+		try {
+		  const userDocRef = doc(db, 'users', user.uid);
+		  const userDoc = await getDoc(userDocRef);
+  
+		  if (userDoc.exists()) {
+			const userData = userDoc.data();
+  
+			if (userData?.role !== 'admin') {
+			  console.log('User is not an admin. Redirecting to homepage.');
+			  window.location.href = '/'; // Redirect to homepage or other page
+			} else {
+			  console.log('User is authenticated as an admin.');
+			  isAuthorized = true; // Allow access to admin content
+			  fetchPickupItems(); // Fetch pickup items after authorization
 			}
-
-			try {
-				const userDocRef = doc(db, 'users', user.uid);
-				const userDoc = await getDoc(userDocRef);
-
-				if (userDoc.exists()) {
-					const userData = userDoc.data();
-
-					if (userData?.role !== 'admin') {
-						console.log('User is not an admin. Redirecting to homepage.');
-						window.location.href = '/'; // Redirect to homepage or other page
-					} else {
-						console.log('User is authenticated as an admin.');
-						isAuthorized = true; // Allow access to admin content
-						fetchPickupItems(); // Fetch pickup items after authorization
-					}
-				} else {
-					console.error('User document not found in Firestore.');
-					window.location.href = '/login'; // Redirect to login if user doc not found
-				}
-			} catch (error) {
-				console.error('Error fetching user role:', error);
-				errorMessage = 'An error occurred while checking user role.';
-				window.location.href = '/'; // Fallback to homepage if error occurs
-			}
-		});
+		  } else {
+			console.error('User document not found in Firestore.');
+			window.location.href = '/login'; // Redirect to login if user doc not found
+		  }
+		} catch (error) {
+		  console.error('Error fetching user role:', error);
+		  errorMessage = 'An error occurred while checking user role.';
+		  window.location.href = '/'; // Fallback to homepage if error occurs
+		}
+	  });
 	});
-
+  
 	// Fetch pickup items from Firestore
 	const fetchPickupItems = async () => {
-		try {
-			const q = query(collection(db, 'pickup')); // Query all pickup items
-			const querySnapshot = await getDocs(q);
-			pickupItems = querySnapshot.docs.map((doc) => ({
-				id: doc.id,
-				...doc.data()
-			}));
-		} catch (error) {
-			console.error('Error fetching pickup items:', error);
-		}
+	  try {
+		const q = query(collection(db, 'pickup'));
+		const querySnapshot = await getDocs(q);
+		pickupItems = querySnapshot.docs.map((doc) => ({
+		  id: doc.id,
+		  ...doc.data()
+		}));
+  
+		// Group orders by userId
+		pickupItems = groupOrdersByUser(pickupItems);
+	  } catch (error) {
+		console.error('Error fetching pickup items:', error);
+	  }
 	};
-
-	// Mark item as completed
-  const markAsCompleted = async (itemId: string) => {
-    try {
-        console.log('Attempting to mark as completed for item:', itemId);
-
-        const itemRef = doc(db, 'pickup', itemId);
-        const itemSnapshot = await getDoc(itemRef);
-
-        if (itemSnapshot.exists()) {
-            console.log('Item found in pickup collection:', itemId);
-
-            const itemData = itemSnapshot.data();
-
-            // Move to orderhistory collection
-            const orderHistoryRef = doc(db, 'orderhistory', itemId);
-            await setDoc(orderHistoryRef, {
-                ...itemData,
-                status: 'completed',
-                completedAt: new Date()
-            })
-            .then(() => {
-                console.log('Order moved to order history:', itemId);
-            })
-            .catch((error) => {
-                console.error('Error moving to order history for item:', itemId, error);
-            });
-
-            // Delete from pickup collection
-            await deleteDoc(itemRef)
-            .then(() => {
-                console.log('Item deleted from pickup collection:', itemId);
-            })
-            .catch((error) => {
-                console.error('Error deleting item from pickup for item:', itemId, error);
-            });
-
-            // Update local state by removing item from pickupItems array
-            pickupItems = pickupItems.filter((item) => item.id !== itemId);
-            console.log('Local state updated - item removed:', itemId);
-        } else {
-            console.log('Item not found in pickup collection:', itemId);
-        }
-    } catch (error) {
-        console.error('Error marking item as completed:', error);
-    }
-};
-
-// Cancel item
-const cancelOrder = async (itemId: string) => {
-	try {
-		const itemRef = doc(db, 'pickup', itemId);
-		const itemSnapshot = await getDoc(itemRef);
-
-		if (itemSnapshot.exists()) {
-			const itemData = itemSnapshot.data();
-
-			// Move to orderhistory collection
-			const orderHistoryRef = doc(db, 'orderhistory', itemId);
-			await setDoc(orderHistoryRef, {
-				...itemData,
+  
+	// Group orders by userId
+	const groupOrdersByUser = (items: any[]) => {
+	  const groupedOrders: { [key: string]: any[] } = {};
+  
+	  items.forEach(item => {
+		if (!groupedOrders[item.userId]) {
+		  groupedOrders[item.userId] = [];
+		}
+		groupedOrders[item.userId].push(item);
+	  });
+  
+	  return Object.entries(groupedOrders).map(([userId, orders]) => ({
+		userId,
+		orders,
+		fullName: orders[0]?.fullName, // Assuming fullName is the same for all orders from a user
+	  }));
+	};
+  
+	// Mark all orders for a user as completed
+	const markAllAsCompleted = async (userId: string) => {
+	  try {
+		const userOrders = pickupItems.find((user) => user.userId === userId)?.orders;
+		if (userOrders) {
+		  for (let order of userOrders) {
+			const orderRef = doc(db, 'pickup', order.id);
+			const orderSnapshot = await getDoc(orderRef);
+  
+			if (orderSnapshot.exists()) {
+			  const orderData = orderSnapshot.data();
+			  const orderHistoryRef = doc(db, 'orderhistory', order.id);
+  
+			  await setDoc(orderHistoryRef, {
+				...orderData,
+				status: 'completed',
+				completedAt: new Date()
+			  });
+  
+			  await deleteDoc(orderRef); // Delete from pickup collection
+			}
+		  }
+		  fetchPickupItems(); // Refresh list after marking orders as completed
+		}
+	  } catch (error) {
+		console.error('Error marking orders as completed:', error);
+	  }
+	};
+  
+	// Cancel all orders for a user
+	const cancelAllOrders = async (userId: string) => {
+	  try {
+		const userOrders = pickupItems.find((user) => user.userId === userId)?.orders;
+		if (userOrders) {
+		  for (let order of userOrders) {
+			const orderRef = doc(db, 'pickup', order.id);
+			const orderSnapshot = await getDoc(orderRef);
+  
+			if (orderSnapshot.exists()) {
+			  const orderData = orderSnapshot.data();
+			  const orderHistoryRef = doc(db, 'orderhistory', order.id);
+  
+			  await setDoc(orderHistoryRef, {
+				...orderData,
 				status: 'cancelled',
 				cancelledAt: new Date()
-			});
-
-			// Remove from pickup collection
-			await deleteDoc(itemRef);
-			pickupItems = pickupItems.filter((item) => item.id !== itemId); // Update local state
-			console.log('Order cancelled.');
+			  });
+  
+			  await deleteDoc(orderRef); // Delete from pickup collection
+			}
+		  }
+		  fetchPickupItems(); // Refresh list after cancelling orders
 		}
-	} catch (error) {
-		console.error('Error cancelling order:', error);
-	}
-};
-
-</script>
-
-{#if isAuthorized}
+	  } catch (error) {
+		console.error('Error cancelling orders:', error);
+	  }
+	};
+  </script>
+  
+  {#if isAuthorized}
 	<div class="admin-dashboard">
-		<h1>Current Pickup Orders</h1>
-
-		{#if pickupItems.length === 0}
-			<p>No pickup orders available.</p>
-		{:else}
-			<div class="pickup-items">
-				{#each pickupItems as item}
-					<div class="pickup-item">
-						<div>
-							<strong>Item:</strong>
-							{item.name}
+	  <h1>Current Pickup Orders</h1>
+  
+	  {#if pickupItems.length === 0}
+		<p>No pickup orders available.</p>
+	  {:else}
+		<div class="pickup-items flex flex-row gap-2">
+		  {#each pickupItems as user}
+			<Card.Root class="pickup-item">
+			  <Card.Content>
+				<div class="flex flex-row justify-between">
+				  <div class="flex flex-col">
+					<span>Order #351</span>
+					<span class="font-light">{user.fullName}</span>
+					<span>Pickup Time: ASAP</span>
+				  </div>
+  
+				  <Avatar.Root>
+					<Avatar.Image src="https://avatar.iran.liara.run/public/63" alt="@shadcn" />
+					<Avatar.Fallback>CN</Avatar.Fallback>
+				  </Avatar.Root>
+				</div>
+				<ScrollArea class="h-auto">
+				  {#each user.orders as order}
+					<div class="flex flex-row">
+					  <div>
+						<img src="/placeholder.png" alt="Placeholder" class="w-20" />
+					  </div>
+					  <div class="flex flex-1 flex-col p-2">
+						<span class="font-medium">{order.name}</span>
+						<div class="flex justify-between text-sm">
+						  <span>₱{order.price} </span>
+						  <span>Qty: {order.quantity}</span>
 						</div>
-						<div>
-							<strong>Price:</strong> ₱{item.price}
-						</div>
-						<div>
-							<strong>Qty:</strong>
-							{item.quantity}
-						</div>
-						<div>
-							<Button onclick={() => markAsCompleted(item.id)}>Mark as Completed</Button>
-							<Button onclick={() => cancelOrder(item.id)}>Cancel</Button>
-							{#if cancelReason === item.id}
-								<textarea bind:value={cancelReason} placeholder="Provide cancellation reason"
-								></textarea>
-							{/if}
-						</div>
+					  </div>
 					</div>
-				{/each}
-			</div>
-		{/if}
+				  {/each}
+				</ScrollArea>
+				<Separator class="mb-2" />
+				<div class="flex flex-row">
+				  <div class="flex flex-1 flex-col">
+					<span>Total items: {user.orders.length} items</span>
+					<span>Total price: ₱{user.orders.reduce((total: number, order: { price: number; quantity: number; }) => total + order.price * order.quantity, 0)}</span>
+				  </div>
+				  <Button
+					onclick={() => markAllAsCompleted(user.userId)}
+					variant="outline"
+					class="text-green-500 hover:text-green-500"><Check /></Button>
+				  <Button
+					onclick={() => cancelAllOrders(user.userId)}
+					variant="outline"
+					class="text-red-500 hover:text-red-500"><X /></Button>
+				</div>
+			  </Card.Content>
+			</Card.Root>
+		  {/each}
+		</div>
+	  {/if}
 	</div>
-{:else if errorMessage}
+  {:else if errorMessage}
 	<p style="color: red;">{errorMessage}</p>
 	<!-- Display error message -->
-{/if}
+  {/if}
+  
