@@ -14,21 +14,20 @@
 
 <Sidebar.Provider>
 	<AdminSidebar />
-	<Sidebar.Inset>
-		<header class="sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
+	<Sidebar.Inset class="bg-primary-foreground">
+		<header class="sticky top-0 flex h-16 shrink-0 items-center gap-2 px-4">
 			<Sidebar.Trigger class="-ml-1" />
-			<Separator orientation="vertical" class="mr-2 h-4" />
-			<Breadcrumb.Root>
+			<!-- <Breadcrumb.Root>
 				<Breadcrumb.List>
 					<Breadcrumb.Item class="hidden md:block">
 						<Breadcrumb.Link href="/">Medicines</Breadcrumb.Link>
 					</Breadcrumb.Item>
-					<!-- <Breadcrumb.Separator class="hidden md:block" />
+					<Breadcrumb.Separator class="hidden md:block" />
 					<Breadcrumb.Item>
 						<Breadcrumb.Page>Data Fetching</Breadcrumb.Page>
-					</Breadcrumb.Item> -->
+					</Breadcrumb.Item>
 				</Breadcrumb.List>
-			</Breadcrumb.Root>
+			</Breadcrumb.Root> -->
 		</header>
 		<div class="flex flex-1 flex-col gap-4 p-4">
 			<Toaster />

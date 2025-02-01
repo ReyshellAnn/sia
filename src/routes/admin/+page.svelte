@@ -157,21 +157,20 @@
   </script>
   
   {#if isAuthorized}
-	<div class="admin-dashboard">
-	  <h1>Current Pickup Orders</h1>
+	<div class="admin-dashboard space-y-2">
+	  <span class="text-2xl font-semibold">Pickup list</span>
   
 	  {#if pickupItems.length === 0}
 		<p>No pickup orders available.</p>
 	  {:else}
-		<div class="pickup-items flex flex-row gap-2">
+	  <div class="pickup-items flex flex-col sm:flex-row sm:flex-wrap gap-4">
 		  {#each pickupItems as user}
-			<Card.Root class="pickup-item">
-			  <Card.Content>
+		  <Card.Root class="pickup-item w-full max-w-[300px] min-w-[300px]">
+			  <Card.Content class="p-3 space-y-4">
 				<div class="flex flex-row justify-between">
 				  <div class="flex flex-col">
-					<span>Order #351</span>
-					<span class="font-light">{user.fullName}</span>
-					<span>Pickup Time: ASAP</span>
+					<span class="font-medium text-sm">{user.fullName}</span>
+					<span class="text-xs text-gray-500">Pickup Time: {user.orders[0]?.pickupTime || 'N/A'}</span>
 				  </div>
   
 				  <Avatar.Root>
@@ -179,28 +178,32 @@
 					<Avatar.Fallback>CN</Avatar.Fallback>
 				  </Avatar.Root>
 				</div>
-				<ScrollArea class="h-auto">
-				  {#each user.orders as order}
-					<div class="flex flex-row">
-					  <div>
-						<img src="/placeholder.png" alt="Placeholder" class="w-20" />
-					  </div>
-					  <div class="flex flex-1 flex-col p-2">
-						<span class="font-medium">{order.name}</span>
-						<div class="flex justify-between text-sm">
-						  <span>₱{order.price} </span>
-						  <span>Qty: {order.quantity}</span>
+				<ScrollArea class="h-36">
+					<div class="space-y-2"> <!-- Add space between items -->
+					  {#each user.orders as order}
+						<div class="flex flex-row">
+						  <div>
+							<img src="https://placehold.co/50x50" alt="Placeholder" class="w-16 rounded-full object-cover" />
+						  </div>
+						  <div class="flex flex-1 flex-col p-2">
+							<span class="font-medium text-sm">{order.name}</span>
+							<div class="flex justify-between text-sm">
+							  <span class=" text-gray-500 text-xs">₱{order.price} </span>
+							  <span class=" text-gray-500 text-xs">Qty: {order.quantity}</span>
+							</div>
+						  </div>
 						</div>
-					  </div>
+					  {/each}
 					</div>
-				  {/each}
-				</ScrollArea>
+				  </ScrollArea>
+				  
 				<Separator class="mb-2" />
-				<div class="flex flex-row">
+				<div class="flex flex-row mt-auto">
 				  <div class="flex flex-1 flex-col">
-					<span>Total items: {user.orders.length} items</span>
-					<span>Total price: ₱{user.orders.reduce((total: number, order: { price: number; quantity: number; }) => total + order.price * order.quantity, 0)}</span>
+					<span class="text-gray-500 text-xs">X{user.orders.length} items</span>
+					<span class="font-medium text-sm">₱{user.orders.reduce((total: number, order: { price: number; quantity: number; }) => total + order.price * order.quantity, 0)}</span>
 				  </div>
+				  <div class="space-x-2">
 				  <Button
 					onclick={() => markAllAsCompleted(user.userId)}
 					variant="outline"
@@ -209,6 +212,7 @@
 					onclick={() => cancelAllOrders(user.userId)}
 					variant="outline"
 					class="text-red-500 hover:text-red-500"><X /></Button>
+				</div>
 				</div>
 			  </Card.Content>
 			</Card.Root>

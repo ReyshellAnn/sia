@@ -69,7 +69,9 @@
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
+   /* Apply Poppins globally */
+   body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Poppins', sans-serif;  /* Global font-family */
   }
 }

@@ -8,6 +8,7 @@
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import { goto } from '$app/navigation';
 
 	import Lock from 'lucide-svelte/icons/lock';
 	import Settings from 'lucide-svelte/icons/settings';
@@ -19,29 +20,28 @@
 
 	let { children } = $props();
 
-	// Function to handle logout
 	const handleLogout = async () => {
-		await auth.signOut();
-	};
+    await auth.signOut();
+    goto('/login'); // Smooth, client-side navigation
+};
 </script>
 
 <Sidebar.Provider>
 	<CustomerSidebar />
-	<Sidebar.Inset>
-		<header class="sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
+	<Sidebar.Inset class="bg-primary-foreground">
+		<header class="sticky top-0 flex h-16 shrink-0 items-center gap-2 px-4">
 			<Sidebar.Trigger class="-ml-1" />
-			<Separator orientation="vertical" class="mr-2 h-4" />
-			<Breadcrumb.Root>
+			<!-- <Breadcrumb.Root>
 				<Breadcrumb.List>
 					<Breadcrumb.Item class="hidden md:block">
 						<Breadcrumb.Link href="/">Medicines</Breadcrumb.Link>
 					</Breadcrumb.Item>
-					<!-- <Breadcrumb.Separator class="hidden md:block" />
+					<Breadcrumb.Separator class="hidden md:block" />
 					<Breadcrumb.Item>
 						<Breadcrumb.Page>Data Fetching</Breadcrumb.Page>
-					</Breadcrumb.Item> -->
+					</Breadcrumb.Item>
 				</Breadcrumb.List>
-			</Breadcrumb.Root>
+			</Breadcrumb.Root> -->
 
 			<div class="ml-auto">
 				<Tooltip.Provider delayDuration={0}>
