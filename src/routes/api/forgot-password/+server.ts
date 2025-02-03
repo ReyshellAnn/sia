@@ -2,9 +2,14 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import sendGridMail from '@sendgrid/mail';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '$lib/firebase';
+import dotenv from 'dotenv';
+
+dotenv.config(); // Ensure this is called before accessing process.env
 
 // Set your SendGrid API Key from environment variable
-sendGridMail.setApiKey(process.env.SENDGRID_API_KEY!); // Correct usage for server-side environment variables
+sendGridMail.setApiKey(process.env.SENDGRID_API_KEY!);
+console.log('SendGrid API Key:', process.env.SENDGRID_API_KEY);
+
 
 export const POST: RequestHandler = async ({ request }) => {
   try {

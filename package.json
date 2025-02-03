@@ -46,6 +46,7 @@
 		"@sendgrid/mail": "^8.1.4",
 		"@tanstack/table-core": "^8.20.5",
 		"cloudinary": "^2.5.1",
+		"dotenv": "^16.4.7",
 		"firebase": "^11.2.0"
 	},
 	"pnpm": {
