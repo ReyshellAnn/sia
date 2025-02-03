@@ -91,31 +91,47 @@
 
 	// Delete the selected row
 	const deleteRow = async (medicine: Medicine) => {
-		try {
-			isLoading = true;
+    try {
+        isLoading = true;
 
-			// Delete medicine from Firestore
-			const medicineRef = doc(db, 'medicines', medicine.id);
-			await deleteDoc(medicineRef);
+        // First, delete the image from Cloudinary if it exists
+        if (medicine.imageUrl) {
+            const publicId = medicine.imageUrl.split('/').pop()?.split('.')[0]; // Extract public_id
 
-			// Remove medicine from local state
-			medicines = medicines.filter((m) => m.id !== medicine.id);
+            const response = await fetch('/api/delete-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ public_id: publicId })
+            });
 
-			// Close the dialog
-			isDeleteDialogOpen = false;
+            const cloudinaryResult = await response.json();
 
-			// Show success toast
-			toast.success(`${medicine.name} has been deleted successfully.`);
-		} catch (error) {
-			console.error('Error deleting medicine:', error);
-			errorMessage = 'Failed to delete the medicine.';
+            if (!response.ok) {
+                throw new Error(cloudinaryResult.error || 'Failed to delete image from Cloudinary');
+            }
+        }
 
-			// Show error toast
-			toast.error('An error occurred while deleting the medicine.');
-		} finally {
-			isLoading = false;
-		}
-	};
+        // Delete medicine from Firestore
+        const medicineRef = doc(db, 'medicines', medicine.id);
+        await deleteDoc(medicineRef);
+
+        // Remove medicine from local state
+        medicines = medicines.filter((m) => m.id !== medicine.id);
+
+        // Close the dialog
+        isDeleteDialogOpen = false;
+
+        // Show success toast
+        toast.success(`${medicine.name} has been deleted successfully.`);
+    } catch (error) {
+        console.error('Error deleting medicine:', error);
+        errorMessage = 'Failed to delete the medicine.';
+        toast.error(errorMessage);
+    } finally {
+        isLoading = false;
+    }
+};
+
 
 	// Open dialog and set selected row
 	const openDeleteDialog = (medicine: Medicine) => {

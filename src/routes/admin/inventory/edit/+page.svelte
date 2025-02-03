@@ -93,35 +93,65 @@
 	
 	const handleSubmit = async () => {
     if (!medicine.name || !medicine.description || !medicine.price || !medicine.stock || !medicine.category) {
-      toast.error('Please fill in all the fields.');
-      errorMessage = 'Please fill in all the fields.';
-      return;
+        toast.error('Please fill in all the fields.');
+        errorMessage = 'Please fill in all the fields.';
+        return;
     }
     
     isSubmitLoading = true;
 
-    // If a new image is selected, upload it
-    if (selectedFile) {
-      medicine.imageUrl = await uploadImage();
-    }
-
     try {
-      const selectedCategory = categories.find((cat) => cat.value === medicine.category);
-      const categoryLabel = selectedCategory ? selectedCategory.label : '';
-      medicine.category = categoryLabel;
+        // If a new image is selected, delete the previous image first
+        if (selectedFile && medicine.imageUrl) {
+            await deleteImageFromCloudinary(medicine.imageUrl);
+        }
 
-      const { id, ...medicineData } = medicine;
-      const medicineRef = doc(db, 'medicines', id);
-      await updateDoc(medicineRef, { ...medicineData });
+        // Upload new image if there's a new selection
+        if (selectedFile) {
+            medicine.imageUrl = await uploadImage();
+        }
 
-      toast.success('Medicine updated successfully!');
+        // Get the selected category label
+        const selectedCategory = categories.find((cat) => cat.value === medicine.category);
+        const categoryLabel = selectedCategory ? selectedCategory.label : '';
+        medicine.category = categoryLabel;
+
+        const { id, ...medicineData } = medicine;
+        const medicineRef = doc(db, 'medicines', id);
+        await updateDoc(medicineRef, { ...medicineData });
+
+        toast.success('Medicine updated successfully!');
     } catch (error) {
-      console.error('Error updating medicine:', error);
-      toast.error('Error updating medicine.');
+        console.error('Error updating medicine:', error);
+        toast.error('Error updating medicine.');
     } finally {
-      isSubmitLoading = false;
+        isSubmitLoading = false;
     }
-  };
+};
+
+// Function to delete an image from Cloudinary
+async function deleteImageFromCloudinary(imageUrl: string) {
+    const publicId = extractPublicId(imageUrl);
+    if (!publicId) return;
+
+    const response = await fetch('/api/delete-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ public_id: publicId }),
+    });
+
+    const data = await response.json();
+    if (data.error) {
+        console.error('Error deleting image from Cloudinary:', data.error);
+    }
+}
+
+// Extract Cloudinary public ID from the image URL
+function extractPublicId(imageUrl: string) {
+    const parts = imageUrl.split('/');
+    const fileName = parts[parts.length - 1];
+    return fileName.split('.')[0]; // Remove file extension
+}
 
 	 // Handle image file selection
 	 function handleFileChange(event: Event) {
