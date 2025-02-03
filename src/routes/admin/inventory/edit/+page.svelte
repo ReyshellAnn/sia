@@ -37,13 +37,15 @@
 		category: '',
 		description: '',
 		price: 0,
-		stock: 0
+		stock: 0,
+		imageUrl: ''  
 	});
 
 	let value = $state('');
 	let isAuthorized = $state(false); // Track if the user is authorized
 	let errorMessage = $state(''); // Handle errors
 	let isLoading = $state(true);
+	let selectedFile = $state<File | null>(null); 
 
 	onMount(async () => {
 		// Check if the user is authenticated
@@ -90,90 +92,108 @@
 	let isSubmitLoading = $state(false); // Start with false
 	
 	const handleSubmit = async () => {
-		if (
-			!medicine.name ||
-			!medicine.description ||
-			!medicine.price ||
-			!medicine.stock ||
-			!medicine.category
-		) {
-			toast.error('Please fill in all the fields.');
-			errorMessage = 'Please fill in all the fields.';
-			return;
-		}
-		isSubmitLoading = true; // Set loading state to true before starting
+    if (!medicine.name || !medicine.description || !medicine.price || !medicine.stock || !medicine.category) {
+      toast.error('Please fill in all the fields.');
+      errorMessage = 'Please fill in all the fields.';
+      return;
+    }
+    
+    isSubmitLoading = true;
 
-		try {
-			// Get the selected category object based on the value
-			const selectedCategory = categories.find((cat) => cat.value === medicine.category);
-			const categoryLabel = selectedCategory ? selectedCategory.label : '';
+    // If a new image is selected, upload it
+    if (selectedFile) {
+      medicine.imageUrl = await uploadImage();
+    }
 
-			// Update the medicine object with the category label
-			medicine.category = categoryLabel;
+    try {
+      const selectedCategory = categories.find((cat) => cat.value === medicine.category);
+      const categoryLabel = selectedCategory ? selectedCategory.label : '';
+      medicine.category = categoryLabel;
 
-			// Exclude the 'id' field from the update payload
-			const { id, ...medicineData } = medicine;
+      const { id, ...medicineData } = medicine;
+      const medicineRef = doc(db, 'medicines', id);
+      await updateDoc(medicineRef, { ...medicineData });
 
-			// Update the medicine document in Firestore
-			const medicineRef = doc(db, 'medicines', id);
-			await updateDoc(medicineRef, { ...medicineData });
+      toast.success('Medicine updated successfully!');
+    } catch (error) {
+      console.error('Error updating medicine:', error);
+      toast.error('Error updating medicine.');
+    } finally {
+      isSubmitLoading = false;
+    }
+  };
 
-			toast.success('Medicine updated successfully!');
-		} catch (error) {
-			console.error('Error updating medicine:', error);
-			toast.error('Error updating medicine.');
-		} finally {
-			isSubmitLoading = false; // Ensure isLoading is reset no matter what
-		}
-	};
+	 // Handle image file selection
+	 function handleFileChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+      selectedFile = target.files[0];
+    }
+  }
+
+  // Handle image upload to Cloudinary
+  async function uploadImage() {
+    if (!selectedFile) return alert('Please select an image.');
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUD_NAME}/image/upload`,
+      { method: 'POST', body: formData }
+    );
+    
+    const data = await response.json();
+    return data.secure_url;  // Return image URL from Cloudinary
+  }
 
 	// Fetch categories from Firestore on mount
 	onMount(async () => {
-		try {
-			const querySnapshot = await getDocs(collection(db, 'categories'));
-			const fetchedCategories = querySnapshot.docs.map((doc) => ({
-				value: doc.id,
-				label: doc.data().label
-			}));
-			// Update the store with the fetched categories
-			categoriesStore.set(fetchedCategories);
-		} catch (error) {
-			console.error('Error fetching categories:', error);
-		}
-	});
+    try {
+      const querySnapshot = await getDocs(collection(db, 'categories'));
+      const fetchedCategories = querySnapshot.docs.map((doc) => ({
+        value: doc.id,
+        label: doc.data().label
+      }));
+      categoriesStore.set(fetchedCategories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  });
 
 	// Fetch the medicine data by id
 	onMount(async () => {
-		const id = page.url.searchParams.get('id');
+    const id = page.url.searchParams.get('id');
 
-		if (!id) {
-			errorMessage = 'Medicine ID is missing.';
-			isLoading = false;
-			return;
-		}
+    if (!id) {
+      errorMessage = 'Medicine ID is missing.';
+      isLoading = false;
+      return;
+    }
 
-		try {
-			const medicineRef = doc(db, 'medicines', id);
-			const docSnap = await getDoc(medicineRef);
+    try {
+      const medicineRef = doc(db, 'medicines', id);
+      const docSnap = await getDoc(medicineRef);
 
-			if (docSnap.exists()) {
-				medicine = { id: docSnap.id, ...docSnap.data() } as Medicine;
+      if (docSnap.exists()) {
+        medicine = { id: docSnap.id, ...docSnap.data() } as Medicine;
 
-				// Convert the stored label to value for select dropdown
-				const selectedCategory = categories.find((cat) => cat.label === medicine.category);
-				if (selectedCategory) {
-					medicine.category = selectedCategory.value; // Set value for select dropdown
-				}
-			} else {
-				errorMessage = 'Medicine not found.';
-			}
-		} catch (error) {
-			errorMessage = 'An error occurred while fetching the medicine.';
-			console.error(error);
-		} finally {
-			isLoading = false;
-		}
-	});
+        // Convert the stored label to value for select dropdown
+        const selectedCategory = categories.find((cat) => cat.label === medicine.category);
+        if (selectedCategory) {
+          medicine.category = selectedCategory.value; // Set value for select dropdown
+        }
+      } else {
+        errorMessage = 'Medicine not found.';
+      }
+    } catch (error) {
+      errorMessage = 'An error occurred while fetching the medicine.';
+      console.error(error);
+    } finally {
+      isLoading = false;
+    }
+  });
 </script>
 
 <!-- Render content only if the user is authorized -->
@@ -243,7 +263,7 @@
 						</div>
 					</Card.Content>
 					<Card.Footer>
-						<Input id="picture" type="file" />
+						<Input type="file" accept="image/*" onchange={handleFileChange} />
 					</Card.Footer>
 				</Card.Root>
 				<Card.Root class="flex-1 bg-primary-foreground">

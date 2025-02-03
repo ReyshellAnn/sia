@@ -86,8 +86,10 @@
 
 				cartItems = querySnapshot.docs.map((doc) => ({
 					id: doc.id,
-					...doc.data()
+					...doc.data(),
+					imageUrl: doc.data().imageUrl || '/placeholder.png',
 				}));
+				console.log("Cart items retrieved successfully:", cartItems);
 			} catch (error) {
 				console.error('Error fetching cart items:', error);
 			}
@@ -169,7 +171,7 @@
 				{#each cartItems as item}
 					<div class="flex flex-row justify-between">
 						<div class="flex flex-row space-x-4">
-							<img src="/placeholder.png" alt="Medicine" class="w-20" />
+							<img src={item.imageUrl} alt="Medicine" class="w-20" />
 							<span>{item.name}</span>
 						</div>
 

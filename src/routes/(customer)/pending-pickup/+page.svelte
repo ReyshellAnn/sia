@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { collection, getDocs, query, where, doc, deleteDoc } from 'firebase/firestore';
+	import { collection, getDocs, query, where, doc, deleteDoc, getDoc } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
 	import { auth } from '$lib/firebase'; // Import Firebase auth
 	import { onAuthStateChanged } from 'firebase/auth'; // To track user auth state
@@ -14,36 +14,63 @@
 	let loading = true; // To track if the page is still loading the user
   let totalPrice = 0; // Initialize total price
 
-	// Ensure user is authenticated and fetch pickup items after authentication
-	onMount(() => {
-		onAuthStateChanged(auth, async (currentUser) => {
-			if (!currentUser) {
-				// If no user is logged in, redirect to login page
-				goto('/login');
-				return;
-			}
+  onMount(() => {
+    onAuthStateChanged(auth, async (currentUser) => {
+        if (!currentUser) {
+            goto('/login');
+            return;
+        }
 
-			user = currentUser; // Set user when authenticated
-			loading = false; // Set loading to false once we know the user
+        user = currentUser;
+        loading = false;
 
-			try {
-				const q = query(collection(db, 'pickup'), where('userId', '==', user.uid)); // Query the pickup collection for this user
-				const querySnapshot = await getDocs(q);
+        try {
+            const q = query(collection(db, 'pickup'), where('userId', '==', user.uid));
+            const querySnapshot = await getDocs(q);
 
-				pickupItems = querySnapshot.docs.map((doc) => ({
-					id: doc.id,
-					...doc.data()
-				}));
+            // Fetch all pickup items
+            let items = querySnapshot.docs.map((doc) => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    medicineId: data.medicineId || null, // Ensure medicineId exists
+                    name: data.name,
+                    price: data.price,
+                    quantity: data.quantity
+                };
+            });
 
-				console.log(pickupItems); // Log the fetched items to check the structure
+            console.log("Pickup items before fetching images:", items);
 
-				// Calculate total price after fetching the items
-				totalPrice = pickupItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-			} catch (error) {
-				console.error('Error fetching pickup items:', error);
-			}
-		});
-	});
+            // Fetch medicine images for each item
+            const updatedItems = await Promise.all(
+                items.map(async (item) => {
+                    if (item.medicineId) {
+                        const medicineRef = doc(db, 'medicines', item.medicineId);
+                        const medicineSnap = await getDoc(medicineRef);
+
+                        if (medicineSnap.exists()) {
+                            return {
+                                ...item,
+                                imageUrl: medicineSnap.data().imageUrl || '/placeholder.png'
+                            };
+                        }
+                    }
+                    return { ...item, imageUrl: '/placeholder.png' };
+                })
+            );
+
+            pickupItems = updatedItems; // Assign updated items with images
+            console.log("Pickup items after fetching images:", pickupItems);
+
+            // Calculate total price after fetching the items
+            totalPrice = pickupItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+        } catch (error) {
+            console.error('Error fetching pickup items:', error);
+        }
+    });
+});
+
 </script>
 
 <span>On Going Pickups</span>
@@ -67,7 +94,7 @@
 					<Card.Content>
 						<div class="flex flex-row justify-between">
 							<div class="flex flex-row space-x-4">
-								<img src="/placeholder.png" alt="Medicine" class="w-20" />
+								<img src="{item.imageUrl}" alt="Medicine" class="w-20" />
 								<span>{item.name}</span>
 							</div>
 

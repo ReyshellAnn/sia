@@ -74,6 +74,7 @@
   
 		// Group orders by userId
 		pickupItems = groupOrdersByUser(pickupItems);
+		console.log("Fetch Pickup Items: ", pickupItems)
 	  } catch (error) {
 		console.error('Error fetching pickup items:', error);
 	  }
@@ -183,7 +184,8 @@
 					  {#each user.orders as order}
 						<div class="flex flex-row">
 						  <div>
-							<img src="https://placehold.co/50x50" alt="Placeholder" class="w-16 rounded-full object-cover" />
+							<!-- Only add alt text if it provides meaningful information -->
+     						 <img src={order.imageUrl || 'https://placehold.co/50x50'} alt={order.name || 'Order Image'} class="w-16 rounded-full object-cover" />
 						  </div>
 						  <div class="flex flex-1 flex-col p-2">
 							<span class="font-medium text-sm">{order.name}</span>

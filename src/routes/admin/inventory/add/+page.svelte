@@ -36,9 +36,11 @@
 	let description = $state('');
 	let price = $state(0);
 	let stock = $state(0);
+	let imageUrl = $state("");
 	let isAuthorized = $state(false); // Track if the user is authorized
 	let errorMessage = $state(''); // Handle errors
 	let medicines = $state<Medicine[]>([]); // Store medicines data from Firestore
+	let selectedFile = $state<File | null>(null);
 
 	onMount(async () => {
 		// Check if the user is authenticated
@@ -93,46 +95,59 @@
 
 	// Handle form submission
 	const handleSubmit = async () => {
-		if (!name || !description || !price || !stock || !value) {
-			// Show toast notification for missing fields
-			toast.error('Please fill in all the fields.');
-			errorMessage = 'Please fill in all the fields.';
-			return;
-		}
+	if (!name || !description || !price || !stock || !value || !imageUrl) {
+		toast.error("Please fill in all fields, including image.");
+		return;
+	}
 
-		const selectedCategory = categories.find((cat) => cat.value === value); // Get the selected category object
-		const categoryLabel = selectedCategory ? selectedCategory.label : '';
-
-		// Create a new medicine object
-		const newMedicine = {
-			name,
-			category: categoryLabel,
-			description,
-			price,
-			stock
-		};
-
-		try {
-			isLoading = true; // Set loading state to true
-
-			// Add the new medicine to Firestore
-			const newDocRef = doc(collection(db, 'medicines')); // Get a new document reference
-			await setDoc(newDocRef, newMedicine); // Set the document data
-			toast.success('Medicine added successfully!');
-
-			// Clear form after submission
-			name = '';
-			description = '';
-			price = 0;
-			stock = 0;
-			value = '';
-		} catch (error) {
-			console.error('Error adding medicine: ', error);
-			toast.error('Error adding medicine.');
-		} finally {
-			isLoading = false; // Set loading state to false
-		}
+	const newMedicine = {
+		name,
+		category: categories.find((cat) => cat.value === value)?.label || "",
+		description,
+		price,
+		stock,
+		imageUrl // Include uploaded image URL
 	};
+
+	try {
+		isLoading = true;
+		const newDocRef = doc(collection(db, "medicines"));
+		await setDoc(newDocRef, newMedicine);
+		toast.success("Medicine added successfully!");
+	} catch (error) {
+		console.error("Error adding medicine:", error);
+		toast.error("Error adding medicine.");
+	} finally {
+		isLoading = false;
+	}
+};
+
+
+	/// Handle file selection
+	function handleFileChange(event: Event) {
+		const target = event.target as HTMLInputElement;
+		if (target.files && target.files[0]) {
+			selectedFile = target.files[0];
+		}
+	}
+
+	// Upload image to Cloudinary
+	async function uploadImage() {
+		if (!selectedFile) return alert("Please select an image.");
+
+		const formData = new FormData();
+		formData.append("file", selectedFile);
+		formData.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET); // ml_default or your preset
+
+		const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUD_NAME}/image/upload`, {
+		method: "POST",
+		body: formData
+		});
+
+		const data = await response.json();
+		imageUrl = data.secure_url;
+
+	}
 
 	// Fetch categories from Firestore on mount
 	onMount(async () => {
@@ -207,15 +222,21 @@
 		</div>
 		<!-- Right Div -->
 		<div class="flex flex-[1] flex-col space-y-6">
+			<!-- Upload Image Section -->
 			<Card.Root class="bg-primary-foreground">
 				<Card.Content class="space-y-3">
 					<span class="text-lg font-medium">Upload Image</span>
 					<div class="flex flex-col items-center border">
-						<img src="/placeholder.png" alt="Placeholder" class="w-40" />
+						{#if imageUrl}
+						<img src={imageUrl} alt="" class="w-40" />
+						{:else}
+							<img src="/placeholder.png" alt="Placeholder" class="w-40" />
+						{/if}
 					</div>
 				</Card.Content>
 				<Card.Footer>
-					<Input id="picture" type="file" />
+					<Input id="picture" type="file" accept="image/*" onchange={handleFileChange} />
+					<Button onclick={uploadImage}>Upload</Button>
 				</Card.Footer>
 			</Card.Root>
 			<Card.Root class="flex-1 bg-primary-foreground">

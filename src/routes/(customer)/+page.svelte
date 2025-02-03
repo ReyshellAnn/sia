@@ -24,20 +24,25 @@
     });
   });
 
-  // Fetch medicines from Firestore
-  onMount(async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, 'medicines'));
-      medicines = querySnapshot.docs.map(doc => ({
+ // Fetch medicines from Firestore
+onMount(async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'medicines'));
+    medicines = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log('Fetched medicine data:', data); 
+      return {
         id: doc.id,
-        name: doc.data().name,  // Adjust to match your field names
-        price: doc.data().price, // Adjust to match your field names
-        image: '/placeholder.png' // Use a placeholder or field from Firestore if available
-      }));
-    } catch (error) {
-      console.error('Error fetching medicines:', error);
-    }
-  });
+        name: data.name,  // Adjust to match your field names
+        price: data.price, // Adjust to match your field names
+        image: data.imageUrl || '/placeholder.png' // Fetch image URL from Firestore (or use placeholder)
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching medicines:', error);
+  }
+});
+
 
   // Handle medicine click
   const goToMedicine = (id: string) => {
@@ -46,13 +51,13 @@
 
   const addToCart = async (medicine: any) => {
   if (!user) {
-    // Redirect to login page if user is not logged in
     goto('/login');
     return;
   }
 
   try {
-    // Fetch the user's full name from Firestore
+    console.log('Medicine data before adding to cart:', medicine); // Debugging log
+
     const userDocRef = doc(db, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
@@ -61,31 +66,36 @@
       return;
     }
 
-    const fullName = userDocSnap.data().fullName;  // Assuming fullName is in Firestore
+    const fullName = userDocSnap.data().fullName;
 
-    // Query the cart to check if the product already exists
     const querySnapshot = await getDocs(collection(db, 'cart'));
-    const existingItem = querySnapshot.docs.find(doc => doc.data().medicineId === medicine.id && doc.data().userId === user.uid);
+    const existingItem = querySnapshot.docs.find(doc => 
+      doc.data().medicineId === medicine.id && doc.data().userId === user.uid
+    );
+
+    const imageUrl = medicine.image || '/placeholder.png';
 
     if (existingItem) {
-      // If the product is already in the cart, update the quantity
-      const cartItemRef = doc(db, 'cart', existingItem.id); // Get the reference of the existing cart item
+      const cartItemRef = doc(db, 'cart', existingItem.id);
       await updateDoc(cartItemRef, {
-        quantity: existingItem.data().quantity + 1, // Increase the quantity by 1
+        quantity: existingItem.data().quantity + 1,
       });
       console.log('Quantity updated for item in cart');
     } else {
-      // If the product is not in the cart, add a new item
+      console.log('Adding to cart with imageUrl:', imageUrl); // Debugging log
+
       await addDoc(collection(db, 'cart'), {
         userId: user.uid,
-        fullName: fullName,  // Add fullName to the cart item
+        fullName: fullName,
         medicineId: medicine.id,
         name: medicine.name,
         price: medicine.price,
-        quantity: 1, // Starting quantity for the item
+        quantity: 1,
+        imageUrl: imageUrl,
         createdAt: new Date().toISOString(),
       });
-      console.log('Item added to cart');
+
+      console.log('Item added to cart with imageUrl:', imageUrl);
     }
   } catch (error) {
     console.error('Error adding to cart:', error);
@@ -98,10 +108,10 @@
 <div class="flex flex-wrap gap-4">
   {#each medicines as medicine}
     <Card.Root class="w-72">
-      <Card.Content class="p-0 mx-auto flex items-center justify-center hover:cursor-pointer hover:bg-primary-foreground" onclick={() => goToMedicine(medicine.id)}> 
-        <img src={medicine.image} alt="Medicine" class="w-64" />
+      <Card.Content class="p-0 mx-auto flex items-center justify-center hover:cursor-pointer hover:bg-primary-foreground" onclick={() => goToMedicine(medicine.id)}>
+        <!-- Image alignment fix -->
+        <img src={medicine.image} alt="Medicine" class="w-full h-48 object-cover rounded-md" />
       </Card.Content>
-      
       <Card.Footer class="flex flex-col items-start p-2 space-y-3">
         <span class="text-lg font-normal">{medicine.name}</span>
         <span class="text-lg font-medium">₱{medicine.price}</span>
