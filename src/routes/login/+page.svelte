@@ -7,12 +7,14 @@
 	import { auth } from '$lib/firebase'; // Firebase config file
 	import { signInWithEmailAndPassword } from 'firebase/auth';
 	import { goto } from '$app/navigation';
-  import { Toaster, toast } from 'svelte-sonner';
+  	import { Toaster, toast } from 'svelte-sonner';
+	import { writable } from 'svelte/store';
 
 	let email = '';
 	let password = '';
 	let errorMessage = '';
-  let isLoading = false; // Loading state flag
+  	let isLoading = false; // Loading state flag
+	let showForgotPassword = writable(false);
 
 	async function login(event: Event) {
 		event.preventDefault();
@@ -37,6 +39,34 @@
 			isLoading = false; // Reset loading state
 		}
 	}
+
+	async function sendResetEmail(event: Event) {
+	event.preventDefault();
+	isLoading = true;
+
+	try {
+		const response = await fetch('/api/forgot-password', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ email })
+		});
+
+		const result = await response.json();
+		if (response.ok) {
+			toast.success(result.message);
+			showForgotPassword.set(false); // Close the forgot password form after success
+		} else {
+			toast.error(result.error);
+		}
+	} catch (error) {
+		toast.error('An error occurred while sending the reset email.');
+	} finally {
+		isLoading = false;
+	}
+}
+
 </script>
 
 <div class="flex h-screen w-full items-center justify-center bg-blue-200 px-4">
@@ -60,7 +90,9 @@
 						<Label for="password">Password</Label>
 					</div>
 					<Input id="password" type="password" bind:value={password} required />
-					<a href="##" class="ml-auto inline-block text-sm underline"> Forgot your password? </a>
+					<a href="##" class="ml-auto inline-block text-sm underline" on:click={() => showForgotPassword.set(true)}>
+						Forgot your password?
+					  </a>					  
 				</div>
         <Button type="submit" class="w-full" onclick={login} disabled={isLoading}>
 					{#if isLoading}
@@ -77,3 +109,28 @@
 		</Card.Content>
 	</Card.Root>
 </div>
+
+{#if $showForgotPassword}
+	<div class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center">
+		<div class="bg-white p-6 rounded-md w-96">
+			<h2 class="text-xl mb-4">Reset Your Password</h2>
+			<form on:submit={sendResetEmail}>
+				<div class="mb-4">
+					<Label for="reset-email">Enter your email address:</Label>
+					<Input id="reset-email" type="email" bind:value={email} placeholder="Enter your email" required />
+				</div>
+				<Button type="submit" class="w-full" disabled={isLoading}>
+					{#if isLoading}
+						<span>Loading...</span>
+					{:else}
+						Send Reset Email
+					{/if}
+				</Button>
+			</form>
+			<button class="mt-4 text-sm text-blue-600" on:click={() => showForgotPassword.set(false)}>
+				Cancel
+			</button>
+		</div>
+	</div>
+{/if}
+
