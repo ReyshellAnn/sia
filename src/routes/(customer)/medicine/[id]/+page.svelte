@@ -1,129 +1,211 @@
 <script lang="ts">
-  import { onMount, afterUpdate } from 'svelte';
-  import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
-  import { db } from '$lib/firebase';
-  import * as Card from '$lib/components/ui/card/index.js';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import Input from '$lib/components/ui/input/input.svelte';
-  import * as Carousel from "$lib/components/ui/carousel/index.js";
-  import Separator from '$lib/components/ui/separator/separator.svelte';
-  import { page } from '$app/state';  // To access URL parameters
-  import { goto, onNavigate } from '$app/navigation';  // Import for navigation and onNavigate
-  
-  let medicine: any = null;
-  let medicines: any[] = [];
-  let currentId: string;
+	import { onMount, afterUpdate } from 'svelte';
+	import { collection, getDocs, addDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
+	import { db } from '$lib/firebase';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import Input from '$lib/components/ui/input/input.svelte';
+	import * as Carousel from '$lib/components/ui/carousel/index.js';
+	import Separator from '$lib/components/ui/separator/separator.svelte';
+	import { page } from '$app/state';
+	import { goto, onNavigate } from '$app/navigation';
+	import { auth } from '$lib/firebase';
+	import { onAuthStateChanged } from 'firebase/auth';
+	import { toast } from 'svelte-sonner';
 
-  // Fetch the medicine based on the id from the URL
-  const fetchMedicine = async () => {
-    currentId = page.params.id;  // Access the id from the URL
+	let medicine: any = null;
+	let quantity = 1;
+	let medicines: any[] = [];
+	let currentId: string;
+	let user = page.data.user;
+	let loading: Record<string, boolean> = {};
 
-    if (!currentId) {
-      console.error('No medicine id found in the URL');
-      return;
-    }
+	const fetchMedicine = async () => {
+		currentId = page.params.id;
 
-    try {
-      const docRef = doc(db, 'medicines', currentId);
-      const docSnap = await getDoc(docRef);
+		if (!currentId) {
+			console.error('No medicine id found in the URL');
+			return;
+		}
 
-      if (docSnap.exists()) {
-        medicine = docSnap.data();
-      } else {
-        console.log('No such document!');
-      }
+		try {
+			const docRef = doc(db, 'medicines', currentId);
+			const docSnap = await getDoc(docRef);
 
-      // Fetch other medicines for recommendations
-      const querySnapshot = await getDocs(collection(db, 'medicines'));
-      medicines = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name,
-        price: doc.data().price,
-        image: '/placeholder.png'
-      }));
-    } catch (error) {
-      console.error('Error fetching medicine details:', error);
-    }
-  };
+			if (docSnap.exists()) {
+				medicine = { ...docSnap.data(), id: docSnap.id }; // Add id here
+			} else {
+				console.log('No such document!');
+			}
 
-  // Re-fetch when the URL changes
-  afterUpdate(() => {
-    if (page.params.id !== currentId) {
-      fetchMedicine();
-    }
-  });
+			const querySnapshot = await getDocs(collection(db, 'medicines'));
+			medicines = querySnapshot.docs.map((doc) => ({
+				id: doc.id,
+				name: doc.data().name,
+				price: doc.data().price,
+				imageUrl: doc.data().imageUrl || '/placeholder.png'
+			}));
+		} catch (error) {
+			console.error('Error fetching medicine details:', error);
+		}
+	};
 
-  onMount(() => {
-    fetchMedicine();
-  });
+	afterUpdate(() => {
+		if (page.params.id !== currentId) {
+			fetchMedicine();
+		}
+	});
 
-  // Handle carousel item click
-  const goToMedicine = (id: string) => {
-    goto(`/medicine/${id}`);  // Navigate to the /medicine page with the selected id
-  };
+	onMount(() => {
+		fetchMedicine();
+		onAuthStateChanged(auth, (currentUser) => {
+			user = currentUser ? currentUser : null;
+		});
+	});
+
+	const goToMedicine = (id: string) => {
+		goto(`/medicine/${id}`);
+	};
+
+	const addToCart = async (medicine: any, quantity: number) => {
+		if (!user) {
+			goto('/login');
+			return;
+		}
+
+		// Check if required fields are present
+		if (!medicine || !medicine.id || !medicine.name || !medicine.price || !medicine.imageUrl) {
+			console.error('Invalid medicine data:', medicine);
+			toast.error('Failed to add item to cart. Invalid medicine data.');
+			return;
+		}
+
+		loading = { ...loading, [medicine.id]: true }; // Show loading state
+
+		try {
+			const userDocRef = doc(db, 'users', user.uid);
+			const userDocSnap = await getDoc(userDocRef);
+
+			if (!userDocSnap.exists()) {
+				console.error('User document not found');
+				return;
+			}
+
+			const fullName = userDocSnap.data().fullName;
+			const querySnapshot = await getDocs(collection(db, 'cart'));
+			const existingItem = querySnapshot.docs.find(
+				(doc) => doc.data().medicineId === medicine.id && doc.data().userId === user.uid
+			);
+
+			if (existingItem) {
+				await updateDoc(doc(db, 'cart', existingItem.id), {
+					quantity: existingItem.data().quantity + quantity // Add the correct quantity
+				});
+			} else {
+				await addDoc(collection(db, 'cart'), {
+					userId: user.uid,
+					fullName: fullName,
+					medicineId: medicine.id,
+					name: medicine.name,
+					price: medicine.price,
+					quantity: quantity, // Add the specified quantity
+					imageUrl: medicine.imageUrl || '/placeholder.png',
+					createdAt: new Date().toISOString()
+				});
+			}
+
+			toast.success(`${medicine.name} added to cart!`);
+		} catch (error) {
+			console.error('Error adding to cart:', error);
+			toast.error('Failed to add item to cart.');
+		} finally {
+			loading = { ...loading, [medicine.id]: false }; // Reset loading state
+		}
+	};
 </script>
 
 {#if medicine}
-<div class="flex flex-row">
-  <Card.Root class="flex-1 border-none shadow-none">
-    <Card.Content class="mx-auto flex items-center justify-center p-0">
-      <img src="/placeholder.png" alt="Medicine" class="w-86" />
-    </Card.Content>
-  </Card.Root>
-  <Card.Root class="flex-1 border-none shadow-none">
-    <Card.Content class="mx-auto flex flex-col items-start justify-start space-y-2 p-2">
-      <span class="text-2xl font-medium">{medicine.name}</span>
-      <span class="text-xl font-medium">₱{medicine.price}</span>
+	<div class="flex flex-row">
+		<Card.Root class="flex-1 border-none shadow-none">
+			<Card.Content class="mx-auto flex items-center justify-center p-0">
+				<img src={medicine.imageUrl || '/placeholder.png'} alt={medicine.name} class="w-86" />
+			</Card.Content>
+		</Card.Root>
+		<Card.Root class="flex-1 border-none shadow-none">
+			<Card.Content class="mx-auto flex flex-col items-start justify-start space-y-2 p-2">
+				<span class="text-2xl font-medium">{medicine.name}</span>
+				<span class="text-xl font-medium">₱{medicine.price}</span>
+				<span class="text-sm font-normal">Stock: {medicine.stock || 100}</span>
+				<Separator />
+				<span class="text-base font-medium">Quantity</span>
+				<div class="flex w-full flex-row gap-2">
+					<Input type="number" bind:value={quantity} class="w-24" min="1" />
+					<Button
+						class="flex-1"
+						onclick={() => addToCart(medicine, quantity)}
+						disabled={loading[medicine.id]}
+					>
+						{#if loading[medicine.id]}
+							Adding...
+						{:else}
+							Add To Cart
+						{/if}
+					</Button>
+				</div>
+				<span class="text-lg font-medium">About the Product</span>
+				<span>{medicine.description || 'No description available'}</span>
+			</Card.Content>
+		</Card.Root>
+	</div>
 
-      <span class="text-sm font-normal">Stock: {medicine.stock || 100}</span>
-      
-      <Separator />
-      
-      <span class="text-base font-medium">Quantity</span>
-      <div class="flex w-full flex-row gap-2">
-        <Input type="number" value="0" class="w-24" />
-        <Button class="flex-1">Add To Cart</Button>
-      </div>
-
-      <span class="text-lg font-medium">About the Product</span>
-      <span>{medicine.description || 'No description available'}</span>
-    </Card.Content>
-  </Card.Root>
-</div>
-
-<Card.Root>
-  <Card.Content><Card.Title>You may also like</Card.Title></Card.Content>
-</Card.Root>
-<div class="flex justify-center items-center w-full">
-  <!-- Carousel-->
-  <Carousel.Root class="w-full max-w-6xl">
-    <Carousel.Content class="-ml-1">
-      {#each medicines.filter(m => m.id !== currentId) as medicine, i (i)}  <!-- Exclude the current medicine -->
-        <Carousel.Item class="pl-1 md:basis-1/3 lg:basis-1/4" onclick={() => goToMedicine(medicine.id)}>
-          <div class="p-1">
-            <Card.Root>
-              <Card.Content class="flex aspect-square items-center justify-center p-6 hover:cursor-pointer hover:bg-primary-foreground">
-                <!-- Product Image -->
-                <img src={medicine.image} alt="Medicine" class="w-64" />
+	<Card.Root>
+		<Card.Content><Card.Title>You may also like</Card.Title></Card.Content>
+	</Card.Root>
+	<div class="flex w-full items-center justify-center">
+		<Carousel.Root class="w-full max-w-6xl">
+			<Carousel.Content class="-ml-1">
+				{#each medicines.filter((m) => m.id !== currentId) as medicine, i (i)}
+					<Carousel.Item
+						class="pl-1 md:basis-1/3 lg:basis-1/4"
+						onclick={() => goToMedicine(medicine.id)}
+					>
+						<div class="p-1">
+							<Card.Root>
+                <Card.Content
+                class="flex aspect-square items-center justify-center p-6 hover:cursor-pointer hover:bg-primary-foreground"
+              >
+                <!-- Ensure a uniform size for images with object-fit -->
+                <img
+                  src={medicine.imageUrl}
+                  alt="Medicine"
+                  class="w-64 h-64 object-cover"
+                />
               </Card.Content>
-
-              <Card.Footer class="flex flex-col items-start space-y-3 p-2">
-                <!-- Product Name -->
-                <span class="text-lg font-normal">{medicine.name}</span>
-                <!-- Product Price -->
-                <span class="text-lg font-medium">₱{medicine.price}</span>
-                <!-- Add to Cart Button -->
-                <Button class="w-full">Add To Cart</Button>
-              </Card.Footer>
-            </Card.Root>
-          </div>
-        </Carousel.Item>
-      {/each}
-    </Carousel.Content>
-
-    <!-- Carousel Navigation -->
-    <Carousel.Previous />
-    <Carousel.Next />
-  </Carousel.Root>
-</div>
+								<Card.Footer class="flex flex-col items-start space-y-3 p-2">
+									<span class="text-lg font-normal">{medicine.name}</span>
+									<span class="text-lg font-medium">₱{medicine.price}</span>
+									<Button
+										class="w-full"
+										onclick={(e) => {
+											e.stopPropagation(); // Prevent the Carousel.Item click event from triggering
+											addToCart(medicine, 1); // Default quantity of 1
+										}}
+										disabled={loading[medicine.id]}
+									>
+										{#if loading[medicine.id]}
+											Adding...
+										{:else}
+											Add To Cart
+										{/if}
+									</Button>
+								</Card.Footer>
+							</Card.Root>
+						</div>
+					</Carousel.Item>
+				{/each}
+			</Carousel.Content>
+			<Carousel.Previous />
+			<Carousel.Next />
+		</Carousel.Root>
+	</div>
 {/if}

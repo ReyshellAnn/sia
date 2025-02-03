@@ -12,9 +12,11 @@
     let email = '';
     let password = '';
     let errorMessage = '';
+    let isLoading = false; // Loading state flag
 
     async function login(event: Event) {
         event.preventDefault();
+        isLoading = true; // Set loading state to true
 
         try {
             // Sign in with Firebase Auth
@@ -45,6 +47,8 @@
                 errorMessage = "An unexpected error occurred.";
             }
             console.error("Login error:", error);
+        } finally {
+            isLoading = false; // Reset loading state
         }
     }
 </script>
@@ -70,7 +74,13 @@
                     </div>
                     <Input id="password" type="password" bind:value={password} required />
                 </div>
-                <Button href="/" type="submit" class="w-full" onclick={login}>Login</Button>
+                <Button type="submit" class="w-full" onclick={login} disabled={isLoading}>
+                    {#if isLoading}
+                        <span>Loading...</span>
+                    {:else}
+                        Login
+                    {/if}
+                </Button>
             </div>
         </Card.Content>
     </Card.Root>

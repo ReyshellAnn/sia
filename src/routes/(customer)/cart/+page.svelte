@@ -21,11 +21,22 @@
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import { auth } from '$lib/firebase'; // Import Firebase auth
 	import { onAuthStateChanged } from 'firebase/auth'; // To track user auth state
+	import { toast } from 'svelte-sonner';
 
 	let user;
 	let cartItems: any[] = [];
 	let pickupOption = 'now'; // Default selection
 	let scheduledPickupTime = ''; // Empty by default
+	let loading: {
+  proceed: boolean;
+  clearCart: boolean;
+  removeItem: string | null;
+} = {
+  proceed: false,
+  clearCart: false,
+  removeItem: null
+};
+
 
 	// Generate time slots from 8:00 AM to 8:00 PM
 	const timeSlots: any[] = [];
@@ -87,9 +98,9 @@
 				cartItems = querySnapshot.docs.map((doc) => ({
 					id: doc.id,
 					...doc.data(),
-					imageUrl: doc.data().imageUrl || '/placeholder.png',
+					imageUrl: doc.data().imageUrl || '/placeholder.png'
 				}));
-				console.log("Cart items retrieved successfully:", cartItems);
+				console.log('Cart items retrieved successfully:', cartItems);
 			} catch (error) {
 				console.error('Error fetching cart items:', error);
 			}
@@ -114,18 +125,24 @@
 
 	// Handle removing item from cart
 	const removeFromCart = async (itemId: string) => {
+		loading.removeItem = itemId; // Show loading state for this item
 		try {
 			const itemRef = doc(db, 'cart', itemId);
 			await deleteDoc(itemRef);
 			cartItems = cartItems.filter((item) => item.id !== itemId); // Remove from local state
+			toast.success('Item removed from cart');
 			console.log('Item removed from cart');
 		} catch (error) {
 			console.error('Error removing item from cart:', error);
+			toast.error('Failed to remove item from cart');
+		} finally {
+			loading.removeItem = null; // Reset loading state for the item
 		}
 	};
 
 	// Function to clear the cart
 	const clearCart = async () => {
+		loading.clearCart = true; // Show loading state for clear cart action
 		try {
 			const batch = writeBatch(db);
 			for (const item of cartItems) {
@@ -134,13 +151,18 @@
 			}
 			await batch.commit();
 			cartItems = []; // Clear local state
+			toast.success('Cart has been cleared');
 			console.log('Cart has been cleared');
 		} catch (error) {
 			console.error('Error clearing cart:', error);
+			toast.error('Failed to clear cart');
+		} finally {
+			loading.clearCart = false; // Reset loading state
 		}
 	};
 
 	const proceedToPickup = async () => {
+		loading.proceed = true; // Show loading state for proceed to pickup
 		try {
 			const batch = writeBatch(db);
 			for (const item of cartItems) {
@@ -153,6 +175,7 @@
 				batch.delete(cartRef);
 			}
 			await batch.commit();
+			toast.success('Proceeding to pickup');
 			console.log(
 				'Items moved to pickup with pickup time:',
 				pickupOption === 'now' ? 'ASAP' : scheduledPickupTime
@@ -160,6 +183,9 @@
 			goto('/pending-pickup');
 		} catch (error) {
 			console.error('Error proceeding to pickup:', error);
+			toast.error('Failed to proceed to pickup');
+		} finally {
+			loading.proceed = false; // Reset loading state
 		}
 	};
 </script>
@@ -198,12 +224,17 @@
 						<div class="flex flex-col">
 							<span class="text-sm text-gray-600">Action</span>
 							<Button
-								variant="ghost"
-								class=" rounded-full text-red-600 hover:text-red-900"
-								onclick={() => removeFromCart(item.id)}
-							>
-								<Trash2 />
-							</Button>
+							variant="ghost"
+							class="rounded-full text-red-600 hover:text-red-900"
+							onclick={() => removeFromCart(item.id)}
+							disabled={loading.removeItem === item.id}
+						  >
+							{#if loading.removeItem === item.id}
+							  Removing...
+							{:else}
+							  <Trash2 />
+							{/if}
+						  </Button>
 						</div>
 					</div>
 
@@ -244,17 +275,29 @@
 			{/if}
 
 			<Button
-				onclick={proceedToPickup}
-				disabled={(pickupOption === 'later' && !scheduledPickupTime) || cartItems.length === 0}
-			>
-				Proceed to Pickup
-			</Button>
+  onclick={proceedToPickup}
+  disabled={(pickupOption === 'later' && !scheduledPickupTime) || cartItems.length === 0 || loading.proceed}
+>
+  {#if loading.proceed}
+    Proceeding...
+  {:else}
+    Proceed to Pickup
+  {/if}
+</Button>
 			<Button variant="secondary" onclick={() => goto('/')}>
 				<ArrowLeft />Return to Shopping
 			</Button>
-			<Button variant="secondary" disabled={cartItems.length === 0} onclick={clearCart}>
-				<Trash2 />Clear Cart
-			</Button>
+			<Button
+  variant="secondary"
+  disabled={cartItems.length === 0 || loading.clearCart}
+  onclick={clearCart}
+>
+  {#if loading.clearCart}
+    Clearing...
+  {:else}
+    <Trash2 /> Clear Cart
+  {/if}
+</Button>
 		</Card.Content>
 	</Card.Root>
 </div>

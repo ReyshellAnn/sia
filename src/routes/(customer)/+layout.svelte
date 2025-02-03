@@ -9,6 +9,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { goto } from '$app/navigation';
+	import { Toaster } from 'svelte-sonner';
 
 	import Lock from 'lucide-svelte/icons/lock';
 	import Settings from 'lucide-svelte/icons/settings';
@@ -77,6 +78,7 @@
 			</div>
 		</header>
 		<div class="flex flex-1 flex-col gap-4 p-4">
+			<Toaster />
 			{@render children?.()}
 		</div>
 	</Sidebar.Inset>

@@ -4,118 +4,106 @@
   import { db } from '$lib/firebase';
   import * as Card from '$lib/components/ui/card/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { goto } from '$app/navigation';  // Use goto from $app/navigation
-  import { page } from '$app/state'; // Get user information from the state
-  import { auth } from '$lib/firebase'; // Firebase auth
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
+  import { auth } from '$lib/firebase';
   import { onAuthStateChanged } from 'firebase/auth';
+  import { toast } from 'svelte-sonner';
 
   let medicines: any[] = [];
-  let user = page.data.user; // Assuming user data is stored in page.data
+  let user = page.data.user;
+  let loading: Record<string, boolean> = {};
 
-  // Check authentication status on mount
   onMount(() => {
     onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        // Update user in page data or state store
-        user = currentUser;
-      } else {
-        user = null; // Ensure user is set to null if not authenticated
-      }
+      user = currentUser ? currentUser : null;
     });
   });
 
- // Fetch medicines from Firestore
-onMount(async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, 'medicines'));
-    medicines = querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      console.log('Fetched medicine data:', data); 
-      return {
+  onMount(async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'medicines'));
+      medicines = querySnapshot.docs.map(doc => ({
         id: doc.id,
-        name: data.name,  // Adjust to match your field names
-        price: data.price, // Adjust to match your field names
-        image: data.imageUrl || '/placeholder.png' // Fetch image URL from Firestore (or use placeholder)
-      };
-    });
-  } catch (error) {
-    console.error('Error fetching medicines:', error);
-  }
-});
+        name: doc.data().name,
+        price: doc.data().price,
+        image: doc.data().imageUrl || '/placeholder.png'
+      }));
+    } catch (error) {
+      console.error('Error fetching medicines:', error);
+    }
+  });
 
-
-  // Handle medicine click
   const goToMedicine = (id: string) => {
-    goto(`/medicine/${id}`);  // Navigate to the /medicine page with the selected id
+    goto(`/medicine/${id}`);
   };
 
   const addToCart = async (medicine: any) => {
-  if (!user) {
-    goto('/login');
-    return;
-  }
-
-  try {
-    console.log('Medicine data before adding to cart:', medicine); // Debugging log
-
-    const userDocRef = doc(db, 'users', user.uid);
-    const userDocSnap = await getDoc(userDocRef);
-
-    if (!userDocSnap.exists()) {
-      console.error("User document not found");
+    if (!user) {
+      goto('/login');
       return;
     }
 
-    const fullName = userDocSnap.data().fullName;
+    loading = { ...loading, [medicine.id]: true }; // Mark button as loading
 
-    const querySnapshot = await getDocs(collection(db, 'cart'));
-    const existingItem = querySnapshot.docs.find(doc => 
-      doc.data().medicineId === medicine.id && doc.data().userId === user.uid
-    );
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
 
-    const imageUrl = medicine.image || '/placeholder.png';
+      if (!userDocSnap.exists()) {
+        console.error("User document not found");
+        return;
+      }
 
-    if (existingItem) {
-      const cartItemRef = doc(db, 'cart', existingItem.id);
-      await updateDoc(cartItemRef, {
-        quantity: existingItem.data().quantity + 1,
-      });
-      console.log('Quantity updated for item in cart');
-    } else {
-      console.log('Adding to cart with imageUrl:', imageUrl); // Debugging log
+      const fullName = userDocSnap.data().fullName;
+      const querySnapshot = await getDocs(collection(db, 'cart'));
+      const existingItem = querySnapshot.docs.find(doc => 
+        doc.data().medicineId === medicine.id && doc.data().userId === user.uid
+      );
 
-      await addDoc(collection(db, 'cart'), {
-        userId: user.uid,
-        fullName: fullName,
-        medicineId: medicine.id,
-        name: medicine.name,
-        price: medicine.price,
-        quantity: 1,
-        imageUrl: imageUrl,
-        createdAt: new Date().toISOString(),
-      });
+      if (existingItem) {
+        await updateDoc(doc(db, 'cart', existingItem.id), {
+          quantity: existingItem.data().quantity + 1,
+        });
+      } else {
+        await addDoc(collection(db, 'cart'), {
+          userId: user.uid,
+          fullName: fullName,
+          medicineId: medicine.id,
+          name: medicine.name,
+          price: medicine.price,
+          quantity: 1,
+          imageUrl: medicine.image || '/placeholder.png',
+          createdAt: new Date().toISOString(),
+        });
+      }
 
-      console.log('Item added to cart with imageUrl:', imageUrl);
+      toast.success(`${medicine.name} added to cart!`);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast.error('Failed to add item to cart.');
+    } finally {
+      loading = { ...loading, [medicine.id]: false }; // Reset loading state
     }
-  } catch (error) {
-    console.error('Error adding to cart:', error);
-  }
-};
-
+  };
 </script>
-
 
 <div class="flex flex-wrap gap-4">
   {#each medicines as medicine}
     <Card.Root class="w-72">
       <Card.Content class="p-0 mx-auto flex items-center justify-center hover:cursor-pointer hover:bg-primary-foreground" onclick={() => goToMedicine(medicine.id)}>
-        <!-- Image alignment fix -->
         <img src={medicine.image} alt="Medicine" class="w-full h-48 object-cover rounded-md" />
       </Card.Content>
       <Card.Footer class="flex flex-col items-start p-2 space-y-3">
         <span class="text-lg font-normal">{medicine.name}</span>
         <span class="text-lg font-medium">₱{medicine.price}</span>
-        <Button class="w-full" onclick={() => addToCart(medicine)}>Add To Cart</Button>
+        <Button class="w-full" onclick={() => addToCart(medicine)} disabled={loading[medicine.id]}>
+          {#if loading[medicine.id]}
+            Adding...
+          {:else}
+            Add To Cart
+          {/if}
+        </Button>
       </Card.Footer>
     </Card.Root>
   {/each}

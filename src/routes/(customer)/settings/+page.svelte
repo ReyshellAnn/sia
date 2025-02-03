@@ -77,9 +77,9 @@
     }
   </script>
   
-  <div class="flex flex-row h-screen w-full items-center justify-center px-4">
+  <div class="flex flex-row h-screen w-full">
     <Toaster />
-    <div class="flex flex-col sm:flex-row mx-auto max-w-4xl bg-white p-6 rounded-lg shadow-md">
+    <div class="flex flex-col sm:flex-row mx-auto w-full bg-white p-6 rounded-lg shadow-md">
       <!-- Left column for Edit Profile -->
       <div class="flex-1 space-y-6">
         <h2 class="text-2xl font-semibold text-center">Edit Profile</h2>
