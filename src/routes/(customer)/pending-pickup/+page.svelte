@@ -36,7 +36,8 @@
                     medicineId: data.medicineId || null, // Ensure medicineId exists
                     name: data.name,
                     price: data.price,
-                    quantity: data.quantity
+                    quantity: data.quantity,
+					pickupTime: data.pickupTime || 'Not specified'
                 };
             });
 

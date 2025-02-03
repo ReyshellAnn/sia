@@ -29,6 +29,7 @@
 
 	// Define a type for the order history data
 	interface OrderHistory {
+		imageUrl: string | null | undefined;
 		id: string;
 		medicineId: string;
 		name: string;
@@ -103,6 +104,7 @@
 		<Table.Header>
 			<Table.Row>
 				<Table.Head>Order ID</Table.Head>
+				<Table.Head>Image</Table.Head>
 				<Table.Head>Name</Table.Head>
 				<Table.Head>Price</Table.Head>
 				<Table.Head>Quantity</Table.Head>
@@ -115,6 +117,10 @@
 			{#each orders as order (order.id)}
 				<Table.Row>
 					<Table.Cell class="font-medium">{order.id}</Table.Cell>
+					<Table.Cell>
+						<img src="{order.imageUrl}" alt="Order" class="w-16 h-16 object-cover rounded" />
+					</Table.Cell>
+					
 					<Table.Cell>{order.name}</Table.Cell>
 					<Table.Cell>₱{order.price.toFixed(2)}</Table.Cell>
 					<Table.Cell>{order.quantity}</Table.Cell>
