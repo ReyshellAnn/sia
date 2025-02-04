@@ -69,53 +69,42 @@
 		[key: string]: any; // Allow for any additional fields in the pickup item
 	}
 
-	const fetchPickupItems = async () => {
-		try {
-			const q = query(collection(db, 'pickup'));
-			const querySnapshot = await getDocs(q);
-			const fetchedPickupItems: PickupItem[] = querySnapshot.docs.map((doc) => {
-				const data = doc.data();
-				return {
-					id: doc.id,
-					userId: data.userId, // Make sure userId is in the pickup item
-					...data
-				};
-			});
+	import { onSnapshot } from 'firebase/firestore';
 
-			// Log fetched items to check userId
-			console.log('Fetched Pickup Items:', fetchedPickupItems);
+const fetchPickupItems = () => {
+    const q = query(collection(db, 'pickup'));
+    
+    // Real-time listener for pickup collection
+    onSnapshot(q, async (querySnapshot) => {
+        const fetchedPickupItems: PickupItem[] = querySnapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                userId: data.userId,
+                ...data
+            };
+        });
 
-			// Fetch user data for each pickup item
-			for (let pickupItem of fetchedPickupItems) {
-				if (pickupItem.userId) {
-					// Only attempt to fetch user data if userId exists
-					const userDocRef = doc(db, 'users', pickupItem.userId);
-					const userDoc = await getDoc(userDocRef);
+        // Fetch user data for each pickup item
+        for (let pickupItem of fetchedPickupItems) {
+            if (pickupItem.userId) {
+                // Only attempt to fetch user data if userId exists
+                const userDocRef = doc(db, 'users', pickupItem.userId);
+                const userDoc = await getDoc(userDocRef);
 
-					if (userDoc.exists()) {
-						const userData = userDoc.data();
-						// Log userData to see if profileImageUrl is present
-						console.log('Fetched User Data:', userData);
-						// Add profileImageUrl to the pickup item
-						pickupItem.profileImageUrl = userData?.profileImageUrl || 'https://placehold.co/50x50';
-					} else {
-						console.error(`User not found for userId: ${pickupItem.userId}`);
-					}
-				} else {
-					console.error('No userId in pickup item:', pickupItem);
-				}
-			}
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    // Add profileImageUrl to the pickup item
+                    pickupItem.profileImageUrl = userData?.profileImageUrl || 'https://placehold.co/50x50';
+                }
+            }
+        }
 
-			// Log the updated items after adding profileImageUrl
-			console.log('Updated Pickup Items:', fetchedPickupItems);
+        // Group orders by user
+        pickupItems = groupOrdersByUser(fetchedPickupItems);
+    });
+};
 
-			// Group orders by userId
-			pickupItems = groupOrdersByUser(fetchedPickupItems);
-			console.log('Grouped Pickup Items:', pickupItems);
-		} catch (error) {
-			console.error('Error fetching pickup items:', error);
-		}
-	};
 
 	// Group orders by userId
 	const groupOrdersByUser = (items: any[]) => {
