@@ -194,52 +194,56 @@
 	<div class="flex flex-[2] flex-col">
 		<Card.Root>
 			<Card.Content>
-				{#each cartItems as item}
-					<div class="flex flex-row justify-between">
-						<div class="flex flex-row space-x-4">
-							<img src={item.imageUrl} alt="Medicine" class="w-20" />
-							<span>{item.name}</span>
+				{#if cartItems.length === 0}
+					<p class="text-center text-lg text-gray-500">Your cart is empty. Start adding items to your cart!</p>
+				{:else}
+					{#each cartItems as item}
+						<div class="flex flex-row justify-between">
+							<div class="flex flex-row space-x-4">
+								<img src={item.imageUrl} alt="Medicine" class="w-20" />
+								<span>{item.name}</span>
+							</div>
+
+							<div class="flex flex-col">
+								<span class="text-sm text-gray-600">Price</span>
+								<span>₱{item.price}</span>
+							</div>
+
+							<div class="flex flex-col">
+								<span class="text-sm text-gray-600">Qty</span>
+								<Input
+									type="number"
+									value={item.quantity}
+									min="1"
+									oninput={(e) => {
+										const target = e.target as HTMLInputElement; // Type assertion to ensure it's an HTMLInputElement
+										if (target) {
+											updateQuantity(item.id, +target.value); // Safely access the value
+										}
+									}}
+								/>
+							</div>
+
+							<div class="flex flex-col">
+								<span class="text-sm text-gray-600">Action</span>
+								<Button
+									variant="ghost"
+									class="rounded-full text-red-600 hover:text-red-900"
+									onclick={() => removeFromCart(item.id)}
+									disabled={loading.removeItem === item.id}
+								>
+									{#if loading.removeItem === item.id}
+										Removing...
+									{:else}
+										<Trash2 />
+									{/if}
+								</Button>
+							</div>
 						</div>
 
-						<div class="flex flex-col">
-							<span class="text-sm text-gray-600">Price</span>
-							<span>₱{item.price}</span>
-						</div>
-
-						<div class="flex flex-col">
-							<span class="text-sm text-gray-600">Qty</span>
-							<Input
-								type="number"
-								value={item.quantity}
-								min="1"
-								oninput={(e) => {
-									const target = e.target as HTMLInputElement; // Type assertion to ensure it's an HTMLInputElement
-									if (target) {
-										updateQuantity(item.id, +target.value); // Safely access the value
-									}
-								}}
-							/>
-						</div>
-
-						<div class="flex flex-col">
-							<span class="text-sm text-gray-600">Action</span>
-							<Button
-							variant="ghost"
-							class="rounded-full text-red-600 hover:text-red-900"
-							onclick={() => removeFromCart(item.id)}
-							disabled={loading.removeItem === item.id}
-						  >
-							{#if loading.removeItem === item.id}
-							  Removing...
-							{:else}
-							  <Trash2 />
-							{/if}
-						  </Button>
-						</div>
-					</div>
-
-					<Separator />
-				{/each}
+						<Separator />
+					{/each}
+				{/if}
 			</Card.Content>
 		</Card.Root>
 	</div>

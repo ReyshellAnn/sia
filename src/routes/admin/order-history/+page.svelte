@@ -103,8 +103,7 @@
 	<Table.Root>
 		<Table.Header>
 			<Table.Row>
-				<Table.Head>Order ID</Table.Head>
-				<Table.Head>Image</Table.Head>
+				<!-- <Table.Head>Order ID</Table.Head> -->
 				<Table.Head>Name</Table.Head>
 				<Table.Head>Price</Table.Head>
 				<Table.Head>Quantity</Table.Head>
@@ -116,12 +115,11 @@
 		<Table.Body>
 			{#each orders as order (order.id)}
 				<Table.Row>
-					<Table.Cell class="font-medium">{order.id}</Table.Cell>
+					<!-- <Table.Cell class="font-medium">{order.id}</Table.Cell> -->
 					<Table.Cell>
 						<img src="{order.imageUrl}" alt="Order" class="w-16 h-16 object-cover rounded" />
+						{order.name}
 					</Table.Cell>
-					
-					<Table.Cell>{order.name}</Table.Cell>
 					<Table.Cell>₱{order.price.toFixed(2)}</Table.Cell>
 					<Table.Cell>{order.quantity}</Table.Cell>
 					<Table.Cell>{order.status}</Table.Cell>

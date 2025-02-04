@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
-    import { toast } from 'svelte-sonner';
+	import { toast } from 'svelte-sonner';
 
 	import { collection, doc, getDoc, getDocs, deleteDoc } from 'firebase/firestore'; // Import Firestore functions
 	import { auth, db } from '$lib/firebase'; // Firebase Auth and Firestore references
@@ -91,47 +91,46 @@
 
 	// Delete the selected row
 	const deleteRow = async (medicine: Medicine) => {
-    try {
-        isLoading = true;
+		try {
+			isLoading = true;
 
-        // First, delete the image from Cloudinary if it exists
-        if (medicine.imageUrl) {
-            const publicId = medicine.imageUrl.split('/').pop()?.split('.')[0]; // Extract public_id
+			// First, delete the image from Cloudinary if it exists
+			if (medicine.imageUrl) {
+				const publicId = medicine.imageUrl.split('/').pop()?.split('.')[0]; // Extract public_id
 
-            const response = await fetch('/api/delete-image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ public_id: publicId })
-            });
+				const response = await fetch('/api/delete-image', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ public_id: publicId })
+				});
 
-            const cloudinaryResult = await response.json();
+				const cloudinaryResult = await response.json();
 
-            if (!response.ok) {
-                throw new Error(cloudinaryResult.error || 'Failed to delete image from Cloudinary');
-            }
-        }
+				if (!response.ok) {
+					throw new Error(cloudinaryResult.error || 'Failed to delete image from Cloudinary');
+				}
+			}
 
-        // Delete medicine from Firestore
-        const medicineRef = doc(db, 'medicines', medicine.id);
-        await deleteDoc(medicineRef);
+			// Delete medicine from Firestore
+			const medicineRef = doc(db, 'medicines', medicine.id);
+			await deleteDoc(medicineRef);
 
-        // Remove medicine from local state
-        medicines = medicines.filter((m) => m.id !== medicine.id);
+			// Remove medicine from local state
+			medicines = medicines.filter((m) => m.id !== medicine.id);
 
-        // Close the dialog
-        isDeleteDialogOpen = false;
+			// Close the dialog
+			isDeleteDialogOpen = false;
 
-        // Show success toast
-        toast.success(`${medicine.name} has been deleted successfully.`);
-    } catch (error) {
-        console.error('Error deleting medicine:', error);
-        errorMessage = 'Failed to delete the medicine.';
-        toast.error(errorMessage);
-    } finally {
-        isLoading = false;
-    }
-};
-
+			// Show success toast
+			toast.success(`${medicine.name} has been deleted successfully.`);
+		} catch (error) {
+			console.error('Error deleting medicine:', error);
+			errorMessage = 'Failed to delete the medicine.';
+			toast.error(errorMessage);
+		} finally {
+			isLoading = false;
+		}
+	};
 
 	// Open dialog and set selected row
 	const openDeleteDialog = (medicine: Medicine) => {
@@ -158,25 +157,24 @@
 				<Table.Head>Description</Table.Head>
 				<Table.Head>Price</Table.Head>
 				<Table.Head>Stock</Table.Head>
-				<Table.Head>Image</Table.Head>
 				<Table.Head>Actions</Table.Head>
 			</Table.Row>
 		</Table.Header>
 		<Table.Body>
 			{#each medicines as medicine (medicine.id)}
 				<Table.Row>
-					<Table.Cell class="font-medium">{medicine.name}</Table.Cell>
-					<Table.Cell>{medicine.category}</Table.Cell>
-					<Table.Cell>{medicine.description}</Table.Cell>
-					<Table.Cell>${medicine.price.toFixed(2)}</Table.Cell>
-					<Table.Cell>{medicine.stock}</Table.Cell>
-					<Table.Cell>
+					<Table.Cell class="font-medium">
 						{#if medicine.imageUrl}
 							<img src={medicine.imageUrl} alt={medicine.name} class="h-10 w-10 rounded" />
 						{:else}
 							No Image
 						{/if}
+						{medicine.name}
 					</Table.Cell>
+					<Table.Cell>{medicine.category}</Table.Cell>
+					<Table.Cell>{medicine.description}</Table.Cell>
+					<Table.Cell>${medicine.price.toFixed(2)}</Table.Cell>
+					<Table.Cell>{medicine.stock}</Table.Cell>
 					<Table.Cell>
 						<AlertDialog.Root bind:open={isDeleteDialogOpen}>
 							<AlertDialog.Trigger
@@ -219,9 +217,9 @@
 								</AlertDialog.Footer>
 							</AlertDialog.Content>
 						</AlertDialog.Root>
-                        <Button href={`/admin/inventory/edit?id=${medicine.id}`} variant="ghost">
-                            <Pencil />
-                        </Button>
+						<Button href={`/admin/inventory/edit?id=${medicine.id}`} variant="ghost">
+							<Pencil />
+						</Button>
 					</Table.Cell>
 				</Table.Row>
 			{/each}

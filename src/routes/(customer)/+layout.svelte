@@ -50,10 +50,21 @@
 						<Tooltip.Trigger
 							class={buttonVariants({ variant: 'ghost' }) + ' rounded-full hover:bg-transparent'}
 						>
-							<Avatar.Root>
-								<Avatar.Image src="https://avatar.iran.liara.run/public/63" alt="@shadcn" />
-								<Avatar.Fallback>CN</Avatar.Fallback>
-							</Avatar.Root>
+						<Avatar.Root>
+							<!-- Use the profileImageUrl from the user store -->
+							<Avatar.Image 
+								src={($user && $user.profileImageUrl) || '/placeholder.png'} 
+								alt={$user ? $user.fullName : "User"} 
+							/>
+							<Avatar.Fallback>
+								<!-- Fallback text in case no profile image is available -->
+								{#if $user}
+									{$user.fullName[0]}
+								{:else}
+									U
+								{/if}
+							</Avatar.Fallback>
+						</Avatar.Root>
 						</Tooltip.Trigger>
 						<Tooltip.Content align="end" alignOffset={15} class="flex flex-col p-0">
 							{#if $user}

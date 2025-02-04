@@ -24,6 +24,7 @@
       status: string;
       createdAt: string;
       completedAt: string;
+      imageUrl?: string;
     }
   
     let orders = $state<OrderHistory[]>([]); // Store user's order history
@@ -69,7 +70,7 @@
     <Table.Root>
       <Table.Header>
         <Table.Row>
-          <Table.Head>Order ID</Table.Head>
+          <!-- <Table.Head>Order ID</Table.Head> -->
           <Table.Head>Name</Table.Head>
           <Table.Head>Price</Table.Head>
           <Table.Head>Quantity</Table.Head>
@@ -80,8 +81,15 @@
       <Table.Body>
         {#each orders as order (order.id)}
           <Table.Row>
-            <Table.Cell class="font-medium">{order.id}</Table.Cell>
-            <Table.Cell>{order.name}</Table.Cell>
+            <!-- <Table.Cell class="font-medium">{order.id}</Table.Cell> -->
+            <Table.Cell>
+              {#if order.imageUrl}
+							<img src={order.imageUrl} alt={order.name} class="h-10 w-10 rounded" />
+						{:else}
+							No Image
+						{/if}
+              {order.name}
+            </Table.Cell>
             <Table.Cell>₱{order.price.toFixed(2)}</Table.Cell>
             <Table.Cell>{order.quantity}</Table.Cell>
             <Table.Cell>{order.status}</Table.Cell>
