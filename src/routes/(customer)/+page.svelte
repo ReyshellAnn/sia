@@ -97,7 +97,7 @@
       <Card.Footer class="flex flex-col items-start p-2 space-y-3">
         <span class="text-lg font-normal">{medicine.name}</span>
         <span class="text-lg font-medium">₱{medicine.price}</span>
-        <Button class="w-full" onclick={() => addToCart(medicine)} disabled={loading[medicine.id]}>
+        <Button class="w-full bg-orange-400 hover:bg-orange-500" onclick={() => addToCart(medicine)} disabled={loading[medicine.id]}>
           {#if loading[medicine.id]}
             Adding...
           {:else}

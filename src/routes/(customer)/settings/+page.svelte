@@ -205,7 +205,7 @@
 {#if profileImageUrl}
   <img src={profileImageUrl} alt="Profile" class="w-24 h-24 rounded-full object-cover" />
 {:else}
-  <img src="/placeholder.png" alt="Default Profile" class="w-24 h-24 rounded-full object-cover" />
+  <img src="/panda.png" alt="Default Profile" class="w-24 h-24 rounded-full object-cover" />
 {/if}
 </div>
 

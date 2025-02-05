@@ -20,23 +20,22 @@
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import { auth } from '$lib/firebase'; // Import Firebase auth
-	import { onAuthStateChanged } from 'firebase/auth'; // To track user auth state
+	import { onAuthStateChanged, type User } from 'firebase/auth'; // To track user auth state
 	import { toast } from 'svelte-sonner';
 
-	let user;
+	let user: User;
 	let cartItems: any[] = [];
 	let pickupOption = 'now'; // Default selection
 	let scheduledPickupTime = ''; // Empty by default
 	let loading: {
-  proceed: boolean;
-  clearCart: boolean;
-  removeItem: string | null;
-} = {
-  proceed: false,
-  clearCart: false,
-  removeItem: null
-};
-
+		proceed: boolean;
+		clearCart: boolean;
+		removeItem: string | null;
+	} = {
+		proceed: false,
+		clearCart: false,
+		removeItem: null
+	};
 
 	// Generate time slots from 8:00 AM to 8:00 PM
 	const timeSlots: any[] = [];
@@ -164,22 +163,40 @@
 	const proceedToPickup = async () => {
 		loading.proceed = true; // Show loading state for proceed to pickup
 		try {
+			// Generate a unique pickup ID
+			const pickupId = `pickup_${Date.now()}`;
+
+			// Consolidate all cart items
+			const pickupData = {
+				id: pickupId,
+				userId: user.uid,
+				createdAt: new Date().toISOString(),
+				pickupTime: pickupOption === 'now' ? 'ASAP' : scheduledPickupTime,
+				items: cartItems.map((item) => ({
+					medicineId: item.medicineId,
+					name: item.name,
+					quantity: item.quantity,
+					price: item.price,
+					imageUrl: item.imageUrl
+				}))
+			};
+
 			const batch = writeBatch(db);
+
+			// Create a single pickup document
+			const pickupRef = doc(db, 'pickup', pickupId);
+			batch.set(pickupRef, pickupData);
+
+			// Remove all cart items
 			for (const item of cartItems) {
-				const pickupRef = doc(db, 'pickup', item.id);
-				batch.set(pickupRef, {
-					...item,
-					pickupTime: pickupOption === 'now' ? 'ASAP' : scheduledPickupTime
-				});
 				const cartRef = doc(db, 'cart', item.id);
 				batch.delete(cartRef);
 			}
+
 			await batch.commit();
+
 			toast.success('Proceeding to pickup');
-			console.log(
-				'Items moved to pickup with pickup time:',
-				pickupOption === 'now' ? 'ASAP' : scheduledPickupTime
-			);
+			console.log('Pickup request created:', pickupData);
 			goto('/pending-pickup');
 		} catch (error) {
 			console.error('Error proceeding to pickup:', error);
@@ -195,7 +212,9 @@
 		<Card.Root>
 			<Card.Content>
 				{#if cartItems.length === 0}
-					<p class="text-center text-lg text-gray-500">Your cart is empty. Start adding items to your cart!</p>
+					<p class="text-center text-lg text-gray-500">
+						Your cart is empty. Start adding items to your cart!
+					</p>
 				{:else}
 					{#each cartItems as item}
 						<div class="flex flex-row justify-between">
@@ -279,29 +298,31 @@
 			{/if}
 
 			<Button
-  onclick={proceedToPickup}
-  disabled={(pickupOption === 'later' && !scheduledPickupTime) || cartItems.length === 0 || loading.proceed}
->
-  {#if loading.proceed}
-    Proceeding...
-  {:else}
-    Proceed to Pickup
-  {/if}
-</Button>
+				onclick={proceedToPickup}
+				disabled={(pickupOption === 'later' && !scheduledPickupTime) ||
+					cartItems.length === 0 ||
+					loading.proceed}
+			>
+				{#if loading.proceed}
+					Proceeding...
+				{:else}
+					Proceed to Pickup
+				{/if}
+			</Button>
 			<Button variant="secondary" onclick={() => goto('/')}>
 				<ArrowLeft />Return to Shopping
 			</Button>
 			<Button
-  variant="secondary"
-  disabled={cartItems.length === 0 || loading.clearCart}
-  onclick={clearCart}
->
-  {#if loading.clearCart}
-    Clearing...
-  {:else}
-    <Trash2 /> Clear Cart
-  {/if}
-</Button>
+				variant="secondary"
+				disabled={cartItems.length === 0 || loading.clearCart}
+				onclick={clearCart}
+			>
+				{#if loading.clearCart}
+					Clearing...
+				{:else}
+					<Trash2 /> Clear Cart
+				{/if}
+			</Button>
 		</Card.Content>
 	</Card.Root>
 </div>

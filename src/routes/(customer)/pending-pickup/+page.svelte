@@ -1,124 +1,109 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { collection, getDocs, query, where, doc, deleteDoc, getDoc } from 'firebase/firestore';
+	import { collection, getDocs, query, where } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
-	import { auth } from '$lib/firebase'; // Import Firebase auth
-	import { onAuthStateChanged } from 'firebase/auth'; // To track user auth state
+	import { auth } from '$lib/firebase'; 
+	import { onAuthStateChanged } from 'firebase/auth';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import Trash2 from 'lucide-svelte/icons/trash-2';
-	import { goto } from '$app/navigation'; // For navigation
+	import { goto } from '$app/navigation'; 
 
-	let user = null; // Initialize as null
-	let pickupItems: any[] = []; // Array to store pickup items
-	let loading = true; // To track if the page is still loading the user
-  let totalPrice = 0; // Initialize total price
+	let user = null;
+	let pickupOrders: any[] = [];
+	let loading = true;
+	let totalPrice = 0; 
 
-  onMount(() => {
-    onAuthStateChanged(auth, async (currentUser) => {
-        if (!currentUser) {
-            goto('/login');
-            return;
-        }
+	onMount(() => {
+		onAuthStateChanged(auth, async (currentUser) => {
+			if (!currentUser) {
+				goto('/login');
+				return;
+			}
 
-        user = currentUser;
-        loading = false;
+			user = currentUser;
+			loading = false;
 
-        try {
-            const q = query(collection(db, 'pickup'), where('userId', '==', user.uid));
-            const querySnapshot = await getDocs(q);
+			try {
+				// Query all pickup orders for the current user
+				const q = query(collection(db, 'pickup'), where('userId', '==', user.uid));
+				const querySnapshot = await getDocs(q);
 
-            // Fetch all pickup items
-            let items = querySnapshot.docs.map((doc) => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    medicineId: data.medicineId || null, // Ensure medicineId exists
-                    name: data.name,
-                    price: data.price,
-                    quantity: data.quantity,
-					pickupTime: data.pickupTime || 'Not specified'
-                };
-            });
+				// Process the pickup orders
+				pickupOrders = querySnapshot.docs.map((doc) => {
+					const data = doc.data();
+					const items = data.items || []; // Ensure items array exists
 
-            console.log("Pickup items before fetching images:", items);
+					// Calculate total price per order
+					const orderTotal = items.reduce((sum: number, item: { price: number; quantity: number; }) => sum + item.price * item.quantity, 0);
+					
+					return {
+						id: doc.id,
+						createdAt: data.createdAt || 'Unknown Date',
+						pickupTime: data.pickupTime || 'ASAP',
+						items,
+						orderTotal
+					};
+				});
 
-            // Fetch medicine images for each item
-            const updatedItems = await Promise.all(
-                items.map(async (item) => {
-                    if (item.medicineId) {
-                        const medicineRef = doc(db, 'medicines', item.medicineId);
-                        const medicineSnap = await getDoc(medicineRef);
-
-                        if (medicineSnap.exists()) {
-                            return {
-                                ...item,
-                                imageUrl: medicineSnap.data().imageUrl || '/placeholder.png'
-                            };
-                        }
-                    }
-                    return { ...item, imageUrl: '/placeholder.png' };
-                })
-            );
-
-            pickupItems = updatedItems; // Assign updated items with images
-            console.log("Pickup items after fetching images:", pickupItems);
-
-            // Calculate total price after fetching the items
-            totalPrice = pickupItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-        } catch (error) {
-            console.error('Error fetching pickup items:', error);
-        }
-    });
-});
-
+				// Compute the overall total price
+				totalPrice = pickupOrders.reduce((sum, order) => sum + order.orderTotal, 0);
+			} catch (error) {
+				console.error('Error fetching pickup orders:', error);
+			}
+		});
+	});
 </script>
 
-<span>On Going Pickups</span>
+<span class="text-2xl font-semibold">Current Pickups</span>
 {#if loading}
-	<!-- Show loading spinner or a message while fetching the user -->
 	<div>Loading...</div>
 {:else}
-	<!-- Add message for readying the total bill -->
-	<div class="alert alert-info">
-		<p class="font-bold">Please ready your total bill for your pickup</p>
-	</div>
+<div class="w-3/4 flex flex-col gap-2">
+	<span class="font-light text-gray-600 text-sm">
+		Please have your payment ready upon pickup. Show this message or a screenshot.
+	</span>
 
-	<!-- Show total amount -->
-	<div class="mt-4">
-		<span class="text-lg font-bold">Total Bill: ₱{totalPrice}</span>
-	</div>
-	<div class="flex flex-col gap-2">
-		{#each pickupItems as item}
-			<div class="flex flex-[2] flex-col">
-				<Card.Root>
-					<Card.Content>
-						<div class="flex flex-row justify-between">
-							<div class="flex flex-row space-x-4">
-								<img src="{item.imageUrl}" alt="Medicine" class="w-20" />
-								<span>{item.name}</span>
-							</div>
+	<span class="font-light text-sm">
+		<strong>Important:</strong> Orders not picked up within an hour of the pickup time will be canceled.
+	</span>
+</div>
 
-							<div class="flex flex-col">
-								<span class="text-sm text-gray-600">Price</span>
-								<span>₱{item.price}</span>
-							</div>
 
-							<div class="flex flex-col">
-								<span class="text-sm text-gray-600">Qty</span>
-								<span>{item.quantity}</span>
-							</div>
 
-							<!-- Display the Pickup Time -->
-							<div class="flex flex-col">
-								<span class="text-sm text-gray-600">Pickup Time</span>
-								<span>{item.pickupTime}</span>
-								<!-- Displaying pickup time -->
+	<!-- Display Pickup Orders -->
+	<div class="flex flex-col gap-4">
+		{#each pickupOrders as order}
+			<Card.Root>
+				<Card.Content>
+					<div class="flex flex-col gap-2">
+						<span class="text-sm text-gray-600">Pickup Time: {order.pickupTime}</span>
+
+						<!-- Display each item in the order -->
+						{#each order.items as item}
+							<div class="flex flex-row justify-between items-center border-b pb-2">
+								<div class="flex flex-row space-x-4">
+									<img src="{item.imageUrl}" alt="{item.name}" class="w-20" />
+									<span>{item.name}</span>
+								</div>
+
+								<div class="flex flex-col text-center">
+									<span class="text-sm text-gray-600">Price</span>
+									<span>₱{item.price}</span>
+								</div>
+
+								<div class="flex flex-col text-center">
+									<span class="text-sm text-gray-600">Qty</span>
+									<span>{item.quantity}</span>
+								</div>
 							</div>
+						{/each}
+
+						<!-- Display order total -->
+						<div class="mt-2 text-right font-semibold">
+							Total: ₱{order.orderTotal}
 						</div>
-					</Card.Content>
-				</Card.Root>
-			</div>
+					</div>
+				</Card.Content>
+			</Card.Root>
 		{/each}
 	</div>
 {/if}
