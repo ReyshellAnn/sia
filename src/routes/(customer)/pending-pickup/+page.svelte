@@ -59,11 +59,7 @@
 {:else}
 <div class="w-3/4 flex flex-col gap-2">
 	<span class="font-light text-gray-600 text-sm">
-		Please have your payment ready upon pickup. Show this message or a screenshot.
-	</span>
-
-	<span class="font-light text-sm">
-		<strong>Important:</strong> Orders not picked up within an hour of the pickup time will be canceled.
+		Please have your payment ready upon pickup. Show your order ID at the counter. Orders not picked up promptly may be subject to cancellation at the pharmacy's discretion.
 	</span>
 </div>
 

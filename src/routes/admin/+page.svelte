@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { doc, getDoc, query, collection, getDocs, deleteDoc, setDoc } from 'firebase/firestore';
+	import { doc, getDoc, query, collection, updateDoc, deleteDoc, setDoc, increment } from 'firebase/firestore';
 	import { auth, db } from '$lib/firebase'; // Firebase Auth and Firestore
 	import { onAuthStateChanged } from 'firebase/auth'; // Firebase Auth state
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -100,30 +100,49 @@
 
 	// Mark all orders for a user as completed
 	const markAllAsCompleted = async (userId: string) => {
-		try {
-			const userOrders = pickupItems.filter((item) => item.userId === userId);
-			for (let order of userOrders) {
-				const orderRef = doc(db, 'pickup', order.id);
-				const orderSnapshot = await getDoc(orderRef);
+	try {
+		const userOrders = pickupItems.filter((item) => item.userId === userId);
 
-				if (orderSnapshot.exists()) {
-					const orderData = orderSnapshot.data();
-					const orderHistoryRef = doc(db, 'orderhistory', order.id);
+		for (let order of userOrders) {
+			const orderRef = doc(db, 'pickup', order.id);
+			const orderSnapshot = await getDoc(orderRef);
 
-					await setDoc(orderHistoryRef, {
-						...orderData,
-						status: 'completed',
-						completedAt: new Date()
-					});
+			if (orderSnapshot.exists()) {
+				const orderData = orderSnapshot.data();
+				const orderHistoryRef = doc(db, 'orderhistory', order.id);
 
-					await deleteDoc(orderRef); // Delete from pickup collection
+				// Reduce stock for each item in the order
+				for (let item of orderData.items) {
+					const medicineRef = doc(db, 'medicines', item.medicineId);
+					const medicineSnapshot = await getDoc(medicineRef);
+
+					if (medicineSnapshot.exists()) {
+						const currentStock = medicineSnapshot.data().stock || 0;
+						const newStock = Math.max(0, currentStock - item.quantity); // Ensure stock never goes below 0
+
+						await updateDoc(medicineRef, {
+							stock: newStock
+						});
+					}
 				}
+
+				// Move order to order history with status "completed"
+				await setDoc(orderHistoryRef, {
+					...orderData,
+					status: 'completed',
+					completedAt: new Date()
+				});
+
+				// Delete from pickup collection
+				await deleteDoc(orderRef);
 			}
-			fetchPickupItems(); // Refresh list after marking orders as completed
-		} catch (error) {
-			console.error('Error marking orders as completed:', error);
 		}
-	};
+
+		fetchPickupItems(); // Refresh list after marking orders as completed
+	} catch (error) {
+		console.error('Error marking orders as completed:', error);
+	}
+};
 
 	// Cancel all orders for a user
 	const cancelAllOrders = async (userId: string) => {

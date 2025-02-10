@@ -83,6 +83,23 @@
 		loading = { ...loading, [medicine.id]: true }; // Show loading state
 
 		try {
+			// Fetch medicine stock
+			const medicineRef = doc(db, 'medicines', medicine.id);
+			const medicineSnapshot = await getDoc(medicineRef);
+
+			if (!medicineSnapshot.exists()) {
+				console.error('Medicine not found');
+				return;
+			}
+
+			const stock = medicineSnapshot.data().stock || 0;
+
+			if (stock === 0) {
+				// If stock is 0 or not enough stock, show a toast and return
+				toast.error(`${medicine.name} is out of stock.`);
+				return;
+			}
+
 			const userDocRef = doc(db, 'users', user.uid);
 			const userDocSnap = await getDoc(userDocRef);
 
@@ -135,11 +152,24 @@
 			<Card.Content class="mx-auto flex flex-col items-start justify-start space-y-2 p-2">
 				<span class="text-2xl font-medium">{medicine.name}</span>
 				<span class="text-xl font-medium">₱{medicine.price}</span>
-				<span class="text-sm font-normal">Stock: {medicine.stock || 100}</span>
+				<span class="text-sm font-normal">Stock: {medicine.stock}</span>
 				<Separator />
 				<span class="text-base font-medium">Quantity</span>
 				<div class="flex w-full flex-row gap-2">
-					<Input type="number" bind:value={quantity} class="w-24" min="1" />
+					<Input
+						type="number"
+						bind:value={quantity}
+						class="w-24"
+						min="1"
+						max={medicine?.stock || 0}
+						disabled={medicine?.stock === 0}
+						oninput={() => {
+							if (quantity > (medicine?.stock || 0)) {
+								quantity = medicine?.stock || 0; // Ensure quantity doesn't exceed stock
+							}
+						}}
+					/>
+
 					<Button
 						class="flex-1"
 						onclick={() => addToCart(medicine, quantity)}
@@ -171,16 +201,12 @@
 					>
 						<div class="p-1">
 							<Card.Root>
-                <Card.Content
-                class="flex aspect-square items-center justify-center p-6 hover:cursor-pointer hover:bg-primary-foreground"
-              >
-                <!-- Ensure a uniform size for images with object-fit -->
-                <img
-                  src={medicine.imageUrl}
-                  alt="Medicine"
-                  class="w-64 h-64 object-cover"
-                />
-              </Card.Content>
+								<Card.Content
+									class="flex aspect-square items-center justify-center p-6 hover:cursor-pointer hover:bg-primary-foreground"
+								>
+									<!-- Ensure a uniform size for images with object-fit -->
+									<img src={medicine.imageUrl} alt="Medicine" class="h-64 w-64 object-cover" />
+								</Card.Content>
 								<Card.Footer class="flex flex-col items-start space-y-3 p-2">
 									<span class="text-lg font-normal">{medicine.name}</span>
 									<span class="text-lg font-medium">₱{medicine.price}</span>

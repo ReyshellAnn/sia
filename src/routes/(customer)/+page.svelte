@@ -39,53 +39,71 @@
   };
 
   const addToCart = async (medicine: any) => {
-    if (!user) {
-      goto('/login');
+  if (!user) {
+    goto('/login');
+    return;
+  }
+
+  loading = { ...loading, [medicine.id]: true }; // Mark button as loading
+
+  try {
+    // Fetch medicine stock
+    const medicineRef = doc(db, 'medicines', medicine.id);
+    const medicineSnapshot = await getDoc(medicineRef);
+
+    if (!medicineSnapshot.exists()) {
+      console.error("Medicine not found");
       return;
     }
 
-    loading = { ...loading, [medicine.id]: true }; // Mark button as loading
+    const stock = medicineSnapshot.data().stock || 0;
 
-    try {
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (!userDocSnap.exists()) {
-        console.error("User document not found");
-        return;
-      }
-
-      const fullName = userDocSnap.data().fullName;
-      const querySnapshot = await getDocs(collection(db, 'cart'));
-      const existingItem = querySnapshot.docs.find(doc => 
-        doc.data().medicineId === medicine.id && doc.data().userId === user.uid
-      );
-
-      if (existingItem) {
-        await updateDoc(doc(db, 'cart', existingItem.id), {
-          quantity: existingItem.data().quantity + 1,
-        });
-      } else {
-        await addDoc(collection(db, 'cart'), {
-          userId: user.uid,
-          fullName: fullName,
-          medicineId: medicine.id,
-          name: medicine.name,
-          price: medicine.price,
-          quantity: 1,
-          imageUrl: medicine.image || '/placeholder.png',
-          createdAt: new Date().toISOString(),
-        });
-      }
-
-      toast.success(`${medicine.name} added to cart!`);
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      toast.error('Failed to add item to cart.');
-    } finally {
-      loading = { ...loading, [medicine.id]: false }; // Reset loading state
+    if (stock === 0) {
+      // If stock is 0, show a toast and return
+      toast.error(`${medicine.name} is out of stock.`);
+      return;
     }
-  };
+
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+      console.error("User document not found");
+      return;
+    }
+
+    const fullName = userDocSnap.data().fullName;
+    const querySnapshot = await getDocs(collection(db, 'cart'));
+    const existingItem = querySnapshot.docs.find(doc => 
+      doc.data().medicineId === medicine.id && doc.data().userId === user.uid
+    );
+
+    if (existingItem) {
+      await updateDoc(doc(db, 'cart', existingItem.id), {
+        quantity: existingItem.data().quantity + 1,
+      });
+    } else {
+      await addDoc(collection(db, 'cart'), {
+        userId: user.uid,
+        fullName: fullName,
+        medicineId: medicine.id,
+        name: medicine.name,
+        price: medicine.price,
+        quantity: 1,
+        imageUrl: medicine.image || '/placeholder.png',
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    toast.success(`${medicine.name} added to cart!`);
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    toast.error('Failed to add item to cart.');
+  } finally {
+    loading = { ...loading, [medicine.id]: false }; // Reset loading state
+  }
+};
+
 </script>
 
 <div class="flex flex-wrap gap-4">
