@@ -20,6 +20,14 @@
 	let user = page.data.user;
 	let loading: Record<string, boolean> = {};
 
+	let ratings = [
+		{ stars: 5, count: 30 },
+		{ stars: 4, count: 0 },
+		{ stars: 3, count: 1 },
+		{ stars: 2, count: 0 },
+		{ stars: 1, count: 1 }
+	];
+
 	const fetchMedicine = async () => {
 		currentId = page.params.id;
 
@@ -144,13 +152,53 @@
 {#if medicine}
 	<div class="flex flex-row">
 		<Card.Root class="flex-1 border-none shadow-none">
-			<Card.Content class="mx-auto flex items-center justify-center p-0">
+			<Card.Content class="mx-auto flex flex-col items-center justify-center p-0">
 				<img src={medicine.imageUrl || '/placeholder.png'} alt={medicine.name} class="w-86" />
+
+				<div class="w-full space-y-4 rounded-lg p-4">
+					<h2 class="text-xl font-medium">REVIEW</h2>
+					<div class="mb-6 flex flex-row justify-between">
+						<div class="flex flex-col space-x-2">
+							<span class="text-6xl font-light">4.8</span>
+							<div class="flex">
+								{#each Array(5) as _, i}
+									<span class={i === 4 ? 'text-gray-400' : 'text-yellow-400'}>★</span>
+								{/each}
+							</div>
+						</div>
+
+						<div class="mt-2">
+							{#each ratings as rating}
+								<div class="flex items-center">
+									<span class="text-sm font-medium">{rating.stars} ★</span>
+									<div class="ml-2 h-2 w-64 overflow-hidden rounded-full bg-gray-200">
+										<div class="h-full bg-black" style="width: {(rating.count / 31) * 100}%"></div>
+									</div>
+									<span class="ml-2 text-sm">{rating.count}</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+					<Separator />
+					<div class="flex flex-row justify-between">
+						<p class="mt-4 text-lg font-semibold">
+							31 <span class="text-sm font-light">Reviews</span>
+						</p>
+						<Button class=" rounded-md bg-black text-white">WRITE A REVIEW</Button>
+					</div>
+				</div>
 			</Card.Content>
 		</Card.Root>
 		<Card.Root class="flex-1 border-none shadow-none">
 			<Card.Content class="mx-auto flex flex-col items-start justify-start space-y-2 p-2">
 				<span class="text-2xl font-medium">{medicine.name}</span>
+				<!-- Star Rating -->
+				<div class="flex items-center gap-1">
+					{#each Array(5) as _, i}
+						<span class={i < medicine.rating ? 'text-yellow-500' : 'text-gray-300'}>★</span>
+					{/each}
+					<span class="text-sm text-gray-500">({medicine.ratingCount})</span>
+				</div>
 				<span class="text-xl font-medium">₱{medicine.price}</span>
 				<span class="text-sm font-normal">Stock: {medicine.stock}</span>
 				<Separator />
