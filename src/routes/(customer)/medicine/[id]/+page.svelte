@@ -1,20 +1,21 @@
 <script lang="ts">
 	import { onMount, afterUpdate } from 'svelte';
-	import { collection, getDocs, addDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
-	import { db } from '$lib/firebase';
-	import * as Card from '$lib/components/ui/card/index.js';
-	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
-	import Input from '$lib/components/ui/input/input.svelte';
-	import * as Carousel from '$lib/components/ui/carousel/index.js';
-	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import { page } from '$app/state';
 	import { goto, onNavigate } from '$app/navigation';
-	import { auth } from '$lib/firebase';
-	import { onAuthStateChanged } from 'firebase/auth';
 	import { toast } from 'svelte-sonner';
+
+	import { collection, getDocs, addDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
+	import { db, auth } from '$lib/firebase';
+	import { onAuthStateChanged } from 'firebase/auth';
+
+	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as Carousel from '$lib/components/ui/carousel/index.js';
+	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
+	import Input from '$lib/components/ui/input/input.svelte';
+	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 
 	let medicine: any = null;
@@ -361,34 +362,32 @@
 						</Dialog.Root>
 					</div>
 					<div class="mt-6">
-						<ScrollArea class="w-full h-40">
-						{#if reviews.length > 0}
-							{#each reviews as review}
-
-								<div class="rounded-lg border p-4 shadow-sm mb-2">
-									<div class="flex items-center space-x-2">
-										<strong class="text-lg"
-											>{review.userId === user?.uid ? 'You' : 'Anonymous'}</strong
-										>
-										<div class="flex">
-											{#each Array(5) as _, i}
-												<span class={i < review.rating ? 'text-yellow-400' : 'text-gray-400'}
-													>★</span
-												>
-											{/each}
+						<ScrollArea class="h-40 w-full">
+							{#if reviews.length > 0}
+								{#each reviews as review}
+									<div class="mb-2 rounded-lg border p-4 shadow-sm">
+										<div class="flex items-center space-x-2">
+											<strong class="text-lg"
+												>{review.userId === user?.uid ? 'You' : 'Anonymous'}</strong
+											>
+											<div class="flex">
+												{#each Array(5) as _, i}
+													<span class={i < review.rating ? 'text-yellow-400' : 'text-gray-400'}
+														>★</span
+													>
+												{/each}
+											</div>
 										</div>
+										<p class="mt-2 text-gray-700">{review.review}</p>
+										<p class="text-sm text-gray-500">
+											{new Date(review.createdAt).toLocaleDateString()}
+										</p>
 									</div>
-									<p class="mt-2 text-gray-700">{review.review}</p>
-									<p class="text-sm text-gray-500">
-										{new Date(review.createdAt).toLocaleDateString()}
-									</p>
-								</div>
-
-							{/each}
-						{:else}
-							<p class="text-gray-500">No reviews yet. Be the first to write one!</p>
-						{/if}
-					</ScrollArea>	
+								{/each}
+							{:else}
+								<p class="text-gray-500">No reviews yet. Be the first to write one!</p>
+							{/if}
+						</ScrollArea>
 					</div>
 				</div>
 			</Card.Content>

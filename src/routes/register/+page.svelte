@@ -1,13 +1,16 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button/index.js';
+	import '../../app.css';
+
+	import { Toaster, toast } from 'svelte-sonner';
+
 	import * as Card from '$lib/components/ui/card/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import '../../app.css';
+
 	import { auth, db } from '$lib/firebase'; // Firebase config file
 	import { createUserWithEmailAndPassword } from 'firebase/auth';
 	import { doc, setDoc } from 'firebase/firestore';
-	import { Toaster, toast } from 'svelte-sonner';
 
 	let fullName = '';
 	let email = '';
@@ -94,13 +97,13 @@
 					<Label for="confirm-password">Confirm Password</Label>
 					<Input id="confirm-password" type="password" bind:value={confirmPassword} required />
 				</div>
-                <Button type="submit" class="w-full" onclick={register} disabled={isLoading}>
-                    {#if isLoading}
-                        <span>Loading...</span>
-                    {:else}
-                        Register
-                    {/if}
-                </Button>
+				<Button type="submit" class="w-full" onclick={register} disabled={isLoading}>
+					{#if isLoading}
+						<span>Loading...</span>
+					{:else}
+						Register
+					{/if}
+				</Button>
 			</div>
 			<div class="mt-4 text-center text-sm">
 				Already have an account?

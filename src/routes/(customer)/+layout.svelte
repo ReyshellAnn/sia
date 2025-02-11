@@ -1,15 +1,16 @@
 <script lang="ts">
 	import '../../app.css';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import CustomerSidebar from '$lib/components/customer-sidebar.svelte';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
+
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { buttonVariants } from '$lib/components/ui/button/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { goto } from '$app/navigation';
 	import { Toaster } from 'svelte-sonner';
+	
+	import CustomerSidebar from '$lib/components/customer-sidebar.svelte';
 
 	import BellRing from 'lucide-svelte/icons/bell-ring';
 	import Lock from 'lucide-svelte/icons/lock';
@@ -40,26 +41,25 @@
 
 	import { browser } from '$app/environment';
 
-onMount(() => {
-    if (!browser) return; // Prevent execution on the server
-    window.addEventListener('scroll', handleScroll);
-});
+	onMount(() => {
+		if (!browser) return; // Prevent execution on the server
+		window.addEventListener('scroll', handleScroll);
+	});
 
-onDestroy(() => {
-    if (!browser) return;
-    window.removeEventListener('scroll', handleScroll);
-});
-
+	onDestroy(() => {
+		if (!browser) return;
+		window.removeEventListener('scroll', handleScroll);
+	});
 </script>
 
 <Sidebar.Provider>
 	<CustomerSidebar />
 	<Sidebar.Inset class="bg-primary-foreground">
-		<header class="sticky top-0 flex h-16 shrink-0 items-center gap-2 px-4 bg-primary-foreground transition-all { $hasScrolled ? 'border-b border-gray-100 shadow-sm' : '' }">
-
-	  
-	
-	
+		<header
+			class="sticky top-0 flex h-16 shrink-0 items-center gap-2 bg-primary-foreground px-4 transition-all {$hasScrolled
+				? 'border-b border-gray-100 shadow-sm'
+				: ''}"
+		>
 			<Sidebar.Trigger class="-ml-1" />
 			<!-- <Breadcrumb.Root>
 				<Breadcrumb.List>
@@ -107,7 +107,7 @@ onDestroy(() => {
 				<Tooltip.Provider delayDuration={0}>
 					<Tooltip.Root>
 						<Tooltip.Trigger
-							class="flex h-10 w-10 items-center justify-center rounded-full hover:bg-transparent mr-4"
+							class="mr-4 flex h-10 w-10 items-center justify-center rounded-full hover:bg-transparent"
 						>
 							<Avatar.Root class="h-10 w-10">
 								<Avatar.Image
@@ -152,4 +152,3 @@ onDestroy(() => {
 		</div>
 	</Sidebar.Inset>
 </Sidebar.Provider>
-

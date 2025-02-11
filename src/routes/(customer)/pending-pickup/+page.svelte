@@ -1,16 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+
 	import { collection, getDocs, query, where } from 'firebase/firestore';
-	import { db } from '$lib/firebase';
-	import { auth } from '$lib/firebase'; 
+	import { db, auth } from '$lib/firebase';
 	import { onAuthStateChanged } from 'firebase/auth';
+
 	import * as Card from '$lib/components/ui/card/index.js';
-	import { goto } from '$app/navigation'; 
 
 	let user = null;
 	let pickupOrders: any[] = [];
 	let loading = true;
-	let totalPrice = 0; 
+	let totalPrice = 0;
 
 	onMount(() => {
 		onAuthStateChanged(auth, async (currentUser) => {
@@ -33,8 +34,12 @@
 					const items = data.items || []; // Ensure items array exists
 
 					// Calculate total price per order
-					const orderTotal = items.reduce((sum: number, item: { price: number; quantity: number; }) => sum + item.price * item.quantity, 0);
-					
+					const orderTotal = items.reduce(
+						(sum: number, item: { price: number; quantity: number }) =>
+							sum + item.price * item.quantity,
+						0
+					);
+
 					return {
 						id: doc.id,
 						createdAt: data.createdAt || 'Unknown Date',
@@ -57,13 +62,12 @@
 {#if loading}
 	<div>Loading...</div>
 {:else}
-<div class="w-3/4 flex flex-col gap-2">
-	<span class="font-light text-gray-600 text-sm">
-		Please have your payment ready upon pickup. Show your order ID at the counter. Orders not picked up promptly may be subject to cancellation at the pharmacy's discretion.
-	</span>
-</div>
-
-
+	<div class="flex w-3/4 flex-col gap-2">
+		<span class="text-sm font-light text-gray-600">
+			Please have your payment ready upon pickup. Show your order ID at the counter. Orders not
+			picked up promptly may be subject to cancellation at the pharmacy's discretion.
+		</span>
+	</div>
 
 	<!-- Display Pickup Orders -->
 	<div class="flex flex-col gap-4">
@@ -75,9 +79,9 @@
 
 						<!-- Display each item in the order -->
 						{#each order.items as item}
-							<div class="flex flex-row justify-between items-center border-b pb-2">
+							<div class="flex flex-row items-center justify-between border-b pb-2">
 								<div class="flex flex-row space-x-4">
-									<img src="{item.imageUrl}" alt="{item.name}" class="w-20" />
+									<img src={item.imageUrl} alt={item.name} class="w-20" />
 									<span>{item.name}</span>
 								</div>
 

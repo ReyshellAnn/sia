@@ -1,7 +1,4 @@
 <script lang="ts">
-	import Check from 'lucide-svelte/icons/check';
-	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
-
 	import { onMount } from 'svelte';
 	import { categoriesStore } from '$lib/stores/categories'; // Import the shared store
 	import { toast } from 'svelte-sonner';
@@ -18,7 +15,11 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
+
 	import ManageCategories from '../ManageCategories.svelte';
+
+	import Check from 'lucide-svelte/icons/check';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 
 	// Define a type for the medicine data
 	interface Medicine {
@@ -38,14 +39,14 @@
 		description: '',
 		price: 0,
 		stock: 0,
-		imageUrl: ''  
+		imageUrl: ''
 	});
 
 	let value = $state('');
 	let isAuthorized = $state(false); // Track if the user is authorized
 	let errorMessage = $state(''); // Handle errors
 	let isLoading = $state(true);
-	let selectedFile = $state<File | null>(null); 
+	let selectedFile = $state<File | null>(null);
 
 	onMount(async () => {
 		// Check if the user is authenticated
@@ -90,140 +91,146 @@
 	});
 
 	let isSubmitLoading = $state(false); // Start with false
-	
+
 	const handleSubmit = async () => {
-    if (!medicine.name || !medicine.description || !medicine.price || !medicine.stock || !medicine.category) {
-        toast.error('Please fill in all the fields.');
-        errorMessage = 'Please fill in all the fields.';
-        return;
-    }
-    
-    isSubmitLoading = true;
+		if (
+			!medicine.name ||
+			!medicine.description ||
+			!medicine.price ||
+			!medicine.stock ||
+			!medicine.category
+		) {
+			toast.error('Please fill in all the fields.');
+			errorMessage = 'Please fill in all the fields.';
+			return;
+		}
 
-    try {
-        // If a new image is selected, delete the previous image first
-        if (selectedFile && medicine.imageUrl) {
-            await deleteImageFromCloudinary(medicine.imageUrl);
-        }
+		isSubmitLoading = true;
 
-        // Upload new image if there's a new selection
-        if (selectedFile) {
-            medicine.imageUrl = await uploadImage();
-        }
+		try {
+			// If a new image is selected, delete the previous image first
+			if (selectedFile && medicine.imageUrl) {
+				await deleteImageFromCloudinary(medicine.imageUrl);
+			}
 
-        // Get the selected category label
-        const selectedCategory = categories.find((cat) => cat.value === medicine.category);
-        const categoryLabel = selectedCategory ? selectedCategory.label : '';
-        medicine.category = categoryLabel;
+			// Upload new image if there's a new selection
+			if (selectedFile) {
+				medicine.imageUrl = await uploadImage();
+			}
 
-        const { id, ...medicineData } = medicine;
-        const medicineRef = doc(db, 'medicines', id);
-        await updateDoc(medicineRef, { ...medicineData });
+			// Get the selected category label
+			const selectedCategory = categories.find((cat) => cat.value === medicine.category);
+			const categoryLabel = selectedCategory ? selectedCategory.label : '';
+			medicine.category = categoryLabel;
 
-        toast.success('Medicine updated successfully!');
-    } catch (error) {
-        console.error('Error updating medicine:', error);
-        toast.error('Error updating medicine.');
-    } finally {
-        isSubmitLoading = false;
-    }
-};
+			const { id, ...medicineData } = medicine;
+			const medicineRef = doc(db, 'medicines', id);
+			await updateDoc(medicineRef, { ...medicineData });
 
-// Function to delete an image from Cloudinary
-async function deleteImageFromCloudinary(imageUrl: string) {
-    const publicId = extractPublicId(imageUrl);
-    if (!publicId) return;
+			toast.success('Medicine updated successfully!');
+		} catch (error) {
+			console.error('Error updating medicine:', error);
+			toast.error('Error updating medicine.');
+		} finally {
+			isSubmitLoading = false;
+		}
+	};
 
-    const response = await fetch('/api/delete-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ public_id: publicId }),
-    });
+	// Function to delete an image from Cloudinary
+	async function deleteImageFromCloudinary(imageUrl: string) {
+		const publicId = extractPublicId(imageUrl);
+		if (!publicId) return;
 
-    const data = await response.json();
-    if (data.error) {
-        console.error('Error deleting image from Cloudinary:', data.error);
-    }
-}
+		const response = await fetch('/api/delete-image', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ public_id: publicId })
+		});
 
-// Extract Cloudinary public ID from the image URL
-function extractPublicId(imageUrl: string) {
-    const parts = imageUrl.split('/');
-    const fileName = parts[parts.length - 1];
-    return fileName.split('.')[0]; // Remove file extension
-}
+		const data = await response.json();
+		if (data.error) {
+			console.error('Error deleting image from Cloudinary:', data.error);
+		}
+	}
 
-	 // Handle image file selection
-	 function handleFileChange(event: Event) {
-    const target = event.target as HTMLInputElement;
-    if (target.files && target.files[0]) {
-      selectedFile = target.files[0];
-    }
-  }
+	// Extract Cloudinary public ID from the image URL
+	function extractPublicId(imageUrl: string) {
+		const parts = imageUrl.split('/');
+		const fileName = parts[parts.length - 1];
+		return fileName.split('.')[0]; // Remove file extension
+	}
 
-  // Handle image upload to Cloudinary
-  async function uploadImage() {
-    if (!selectedFile) return alert('Please select an image.');
+	// Handle image file selection
+	function handleFileChange(event: Event) {
+		const target = event.target as HTMLInputElement;
+		if (target.files && target.files[0]) {
+			selectedFile = target.files[0];
+		}
+	}
 
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+	// Handle image upload to Cloudinary
+	async function uploadImage() {
+		if (!selectedFile) return alert('Please select an image.');
 
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUD_NAME}/image/upload`,
-      { method: 'POST', body: formData }
-    );
-    
-    const data = await response.json();
-    return data.secure_url;  // Return image URL from Cloudinary
-  }
+		const formData = new FormData();
+		formData.append('file', selectedFile);
+		formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+
+		const response = await fetch(
+			`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUD_NAME}/image/upload`,
+			{ method: 'POST', body: formData }
+		);
+
+		const data = await response.json();
+		return data.secure_url; // Return image URL from Cloudinary
+	}
 
 	// Fetch categories from Firestore on mount
 	onMount(async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, 'categories'));
-      const fetchedCategories = querySnapshot.docs.map((doc) => ({
-        value: doc.id,
-        label: doc.data().label
-      }));
-      categoriesStore.set(fetchedCategories);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  });
+		try {
+			const querySnapshot = await getDocs(collection(db, 'categories'));
+			const fetchedCategories = querySnapshot.docs.map((doc) => ({
+				value: doc.id,
+				label: doc.data().label
+			}));
+			categoriesStore.set(fetchedCategories);
+		} catch (error) {
+			console.error('Error fetching categories:', error);
+		}
+	});
 
 	// Fetch the medicine data by id
 	onMount(async () => {
-    const id = page.url.searchParams.get('id');
+		const id = page.url.searchParams.get('id');
 
-    if (!id) {
-      errorMessage = 'Medicine ID is missing.';
-      isLoading = false;
-      return;
-    }
+		if (!id) {
+			errorMessage = 'Medicine ID is missing.';
+			isLoading = false;
+			return;
+		}
 
-    try {
-      const medicineRef = doc(db, 'medicines', id);
-      const docSnap = await getDoc(medicineRef);
+		try {
+			const medicineRef = doc(db, 'medicines', id);
+			const docSnap = await getDoc(medicineRef);
 
-      if (docSnap.exists()) {
-        medicine = { id: docSnap.id, ...docSnap.data() } as Medicine;
+			if (docSnap.exists()) {
+				medicine = { id: docSnap.id, ...docSnap.data() } as Medicine;
 
-        // Convert the stored label to value for select dropdown
-        const selectedCategory = categories.find((cat) => cat.label === medicine.category);
-        if (selectedCategory) {
-          medicine.category = selectedCategory.value; // Set value for select dropdown
-        }
-      } else {
-        errorMessage = 'Medicine not found.';
-      }
-    } catch (error) {
-      errorMessage = 'An error occurred while fetching the medicine.';
-      console.error(error);
-    } finally {
-      isLoading = false;
-    }
-  });
+				// Convert the stored label to value for select dropdown
+				const selectedCategory = categories.find((cat) => cat.label === medicine.category);
+				if (selectedCategory) {
+					medicine.category = selectedCategory.value; // Set value for select dropdown
+				}
+			} else {
+				errorMessage = 'Medicine not found.';
+			}
+		} catch (error) {
+			errorMessage = 'An error occurred while fetching the medicine.';
+			console.error(error);
+		} finally {
+			isLoading = false;
+		}
+	});
 </script>
 
 <!-- Render content only if the user is authorized -->

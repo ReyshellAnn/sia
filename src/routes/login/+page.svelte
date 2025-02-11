@@ -1,19 +1,22 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button/index.js';
+	import '../../app.css';
+
 	import * as Card from '$lib/components/ui/card/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import '../../app.css';
+
 	import { auth } from '$lib/firebase'; // Firebase config file
 	import { signInWithEmailAndPassword } from 'firebase/auth';
+	
 	import { goto } from '$app/navigation';
-  	import { Toaster, toast } from 'svelte-sonner';
+	import { Toaster, toast } from 'svelte-sonner';
 	import { writable } from 'svelte/store';
 
 	let email = '';
 	let password = '';
 	let errorMessage = '';
-  	let isLoading = false; // Loading state flag
+	let isLoading = false; // Loading state flag
 	let showForgotPassword = writable(false);
 
 	async function login(event: Event) {
@@ -41,36 +44,35 @@
 	}
 
 	async function sendResetEmail(event: Event) {
-	event.preventDefault();
-	isLoading = true;
+		event.preventDefault();
+		isLoading = true;
 
-	try {
-		const response = await fetch('/api/forgot-password', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ email })
-		});
+		try {
+			const response = await fetch('/api/forgot-password', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ email })
+			});
 
-		const result = await response.json();
-		if (response.ok) {
-			toast.success(result.message);
-			showForgotPassword.set(false); // Close the forgot password form after success
-		} else {
-			toast.error(result.error);
+			const result = await response.json();
+			if (response.ok) {
+				toast.success(result.message);
+				showForgotPassword.set(false); // Close the forgot password form after success
+			} else {
+				toast.error(result.error);
+			}
+		} catch (error) {
+			toast.error('An error occurred while sending the reset email.');
+		} finally {
+			isLoading = false;
 		}
-	} catch (error) {
-		toast.error('An error occurred while sending the reset email.');
-	} finally {
-		isLoading = false;
 	}
-}
-
 </script>
 
 <div class="flex h-screen w-full items-center justify-center bg-blue-200 px-4">
-  <Toaster />
+	<Toaster />
 	<Card.Root class="mx-auto max-w-sm">
 		<Card.Header>
 			<Card.Title class="text-2xl">Login</Card.Title>
@@ -90,11 +92,15 @@
 						<Label for="password">Password</Label>
 					</div>
 					<Input id="password" type="password" bind:value={password} required />
-					<a href="##" class="ml-auto inline-block text-sm underline" on:click={() => showForgotPassword.set(true)}>
+					<a
+						href="##"
+						class="ml-auto inline-block text-sm underline"
+						on:click={() => showForgotPassword.set(true)}
+					>
 						Forgot your password?
-					  </a>					  
+					</a>
 				</div>
-        <Button type="submit" class="w-full" onclick={login} disabled={isLoading}>
+				<Button type="submit" class="w-full" onclick={login} disabled={isLoading}>
 					{#if isLoading}
 						<span>Loading...</span>
 					{:else}
@@ -111,13 +117,19 @@
 </div>
 
 {#if $showForgotPassword}
-	<div class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center">
-		<div class="bg-white p-6 rounded-md w-96">
-			<h2 class="text-xl mb-4">Reset Your Password</h2>
+	<div class="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
+		<div class="w-96 rounded-md bg-white p-6">
+			<h2 class="mb-4 text-xl">Reset Your Password</h2>
 			<form on:submit={sendResetEmail}>
 				<div class="mb-4">
 					<Label for="reset-email">Enter your email address:</Label>
-					<Input id="reset-email" type="email" bind:value={email} placeholder="Enter your email" required />
+					<Input
+						id="reset-email"
+						type="email"
+						bind:value={email}
+						placeholder="Enter your email"
+						required
+					/>
 				</div>
 				<Button type="submit" class="w-full" disabled={isLoading}>
 					{#if isLoading}
@@ -133,4 +145,3 @@
 		</div>
 	</div>
 {/if}
-

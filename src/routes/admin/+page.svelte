@@ -1,15 +1,28 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { doc, getDoc, query, collection, updateDoc, deleteDoc, setDoc, increment } from 'firebase/firestore';
+	
+	import {
+		doc,
+		getDoc,
+		query,
+		collection,
+		updateDoc,
+		deleteDoc,
+		setDoc,
+		increment
+	} from 'firebase/firestore';
 	import { auth, db } from '$lib/firebase'; // Firebase Auth and Firestore
 	import { onAuthStateChanged } from 'firebase/auth'; // Firebase Auth state
-	import { Button } from '$lib/components/ui/button/index.js';
+
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import Separator from '$lib/components/ui/separator/separator.svelte';
+
 	import Check from 'lucide-svelte/icons/check';
 	import X from 'lucide-svelte/icons/x';
-	import Separator from '$lib/components/ui/separator/separator.svelte';
+
 
 	let isAuthorized = false;
 	let pickupItems: any[] = [];
@@ -100,49 +113,49 @@
 
 	// Mark all orders for a user as completed
 	const markAllAsCompleted = async (userId: string) => {
-	try {
-		const userOrders = pickupItems.filter((item) => item.userId === userId);
+		try {
+			const userOrders = pickupItems.filter((item) => item.userId === userId);
 
-		for (let order of userOrders) {
-			const orderRef = doc(db, 'pickup', order.id);
-			const orderSnapshot = await getDoc(orderRef);
+			for (let order of userOrders) {
+				const orderRef = doc(db, 'pickup', order.id);
+				const orderSnapshot = await getDoc(orderRef);
 
-			if (orderSnapshot.exists()) {
-				const orderData = orderSnapshot.data();
-				const orderHistoryRef = doc(db, 'orderhistory', order.id);
+				if (orderSnapshot.exists()) {
+					const orderData = orderSnapshot.data();
+					const orderHistoryRef = doc(db, 'orderhistory', order.id);
 
-				// Reduce stock for each item in the order
-				for (let item of orderData.items) {
-					const medicineRef = doc(db, 'medicines', item.medicineId);
-					const medicineSnapshot = await getDoc(medicineRef);
+					// Reduce stock for each item in the order
+					for (let item of orderData.items) {
+						const medicineRef = doc(db, 'medicines', item.medicineId);
+						const medicineSnapshot = await getDoc(medicineRef);
 
-					if (medicineSnapshot.exists()) {
-						const currentStock = medicineSnapshot.data().stock || 0;
-						const newStock = Math.max(0, currentStock - item.quantity); // Ensure stock never goes below 0
+						if (medicineSnapshot.exists()) {
+							const currentStock = medicineSnapshot.data().stock || 0;
+							const newStock = Math.max(0, currentStock - item.quantity); // Ensure stock never goes below 0
 
-						await updateDoc(medicineRef, {
-							stock: newStock
-						});
+							await updateDoc(medicineRef, {
+								stock: newStock
+							});
+						}
 					}
+
+					// Move order to order history with status "completed"
+					await setDoc(orderHistoryRef, {
+						...orderData,
+						status: 'completed',
+						completedAt: new Date()
+					});
+
+					// Delete from pickup collection
+					await deleteDoc(orderRef);
 				}
-
-				// Move order to order history with status "completed"
-				await setDoc(orderHistoryRef, {
-					...orderData,
-					status: 'completed',
-					completedAt: new Date()
-				});
-
-				// Delete from pickup collection
-				await deleteDoc(orderRef);
 			}
-		}
 
-		fetchPickupItems(); // Refresh list after marking orders as completed
-	} catch (error) {
-		console.error('Error marking orders as completed:', error);
-	}
-};
+			fetchPickupItems(); // Refresh list after marking orders as completed
+		} catch (error) {
+			console.error('Error marking orders as completed:', error);
+		}
+	};
 
 	// Cancel all orders for a user
 	const cancelAllOrders = async (userId: string) => {
@@ -252,8 +265,6 @@
 									>
 								</div>
 							</div>
-
-							
 						</Card.Content>
 					</Card.Root>
 				{/each}

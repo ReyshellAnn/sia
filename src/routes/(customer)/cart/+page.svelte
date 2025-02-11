@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
+
 	import {
 		collection,
 		getDocs,
@@ -10,18 +14,16 @@
 		updateDoc,
 		writeBatch
 	} from 'firebase/firestore';
-	import { db } from '$lib/firebase';
+	import { db, auth } from '$lib/firebase';
+	import { onAuthStateChanged, type User } from 'firebase/auth'; // To track user auth state
+
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
-	import { page } from '$app/state'; // To access user information from state
-	import { goto } from '$app/navigation'; // For navigation
+
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
-	import { auth } from '$lib/firebase'; // Import Firebase auth
-	import { onAuthStateChanged, type User } from 'firebase/auth'; // To track user auth state
-	import { toast } from 'svelte-sonner';
 
 	let user: User;
 	let cartItems: any[] = [];

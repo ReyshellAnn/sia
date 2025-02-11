@@ -1,7 +1,4 @@
 <script lang="ts">
-	import Check from 'lucide-svelte/icons/check';
-	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
-
 	import { onMount } from 'svelte';
 	import { categoriesStore } from '$lib/stores/categories'; // Import the shared store
 	import { toast } from 'svelte-sonner';
@@ -17,7 +14,11 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	
 	import ManageCategories from '../ManageCategories.svelte';
+
+	import Check from 'lucide-svelte/icons/check';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 
 	// Define a type for the medicine data
 	interface Medicine {
@@ -36,7 +37,7 @@
 	let description = $state('');
 	let price = $state(0);
 	let stock = $state(0);
-	let imageUrl = $state("");
+	let imageUrl = $state('');
 	let isAuthorized = $state(false); // Track if the user is authorized
 	let errorMessage = $state(''); // Handle errors
 	let medicines = $state<Medicine[]>([]); // Store medicines data from Firestore
@@ -95,33 +96,32 @@
 
 	// Handle form submission
 	const handleSubmit = async () => {
-	if (!name || !description || !price || !stock || !value || !imageUrl) {
-		toast.error("Please fill in all fields, including image.");
-		return;
-	}
+		if (!name || !description || !price || !stock || !value || !imageUrl) {
+			toast.error('Please fill in all fields, including image.');
+			return;
+		}
 
-	const newMedicine = {
-		name,
-		category: categories.find((cat) => cat.value === value)?.label || "",
-		description,
-		price,
-		stock,
-		imageUrl // Include uploaded image URL
+		const newMedicine = {
+			name,
+			category: categories.find((cat) => cat.value === value)?.label || '',
+			description,
+			price,
+			stock,
+			imageUrl // Include uploaded image URL
+		};
+
+		try {
+			isLoading = true;
+			const newDocRef = doc(collection(db, 'medicines'));
+			await setDoc(newDocRef, newMedicine);
+			toast.success('Medicine added successfully!');
+		} catch (error) {
+			console.error('Error adding medicine:', error);
+			toast.error('Error adding medicine.');
+		} finally {
+			isLoading = false;
+		}
 	};
-
-	try {
-		isLoading = true;
-		const newDocRef = doc(collection(db, "medicines"));
-		await setDoc(newDocRef, newMedicine);
-		toast.success("Medicine added successfully!");
-	} catch (error) {
-		console.error("Error adding medicine:", error);
-		toast.error("Error adding medicine.");
-	} finally {
-		isLoading = false;
-	}
-};
-
 
 	/// Handle file selection
 	function handleFileChange(event: Event) {
@@ -133,20 +133,22 @@
 
 	// Upload image to Cloudinary
 	async function uploadImage() {
-		if (!selectedFile) return alert("Please select an image.");
+		if (!selectedFile) return alert('Please select an image.');
 
 		const formData = new FormData();
-		formData.append("file", selectedFile);
-		formData.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET); // ml_default or your preset
+		formData.append('file', selectedFile);
+		formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET); // ml_default or your preset
 
-		const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUD_NAME}/image/upload`, {
-		method: "POST",
-		body: formData
-		});
+		const response = await fetch(
+			`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUD_NAME}/image/upload`,
+			{
+				method: 'POST',
+				body: formData
+			}
+		);
 
 		const data = await response.json();
 		imageUrl = data.secure_url;
-
 	}
 
 	// Fetch categories from Firestore on mount
@@ -178,12 +180,13 @@
 		<div class="flex flex-row space-x-2">
 			<Button onclick={handleSubmit} disabled={isLoading}>
 				{#if isLoading}
-				  <span class="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"></span> 
+					<span
+						class="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"
+					></span>
 				{:else}
-				  <Check />Submit
+					<Check />Submit
 				{/if}
-			  </Button>
-			
+			</Button>
 		</div>
 	</header>
 	<div class="flex flex-row space-x-8 px-20">
@@ -228,7 +231,7 @@
 					<span class="text-lg font-medium">Upload Image</span>
 					<div class="flex flex-col items-center border">
 						{#if imageUrl}
-						<img src={imageUrl} alt="" class="w-40" />
+							<img src={imageUrl} alt="" class="w-40" />
 						{:else}
 							<img src="/placeholder.png" alt="Placeholder" class="w-40" />
 						{/if}

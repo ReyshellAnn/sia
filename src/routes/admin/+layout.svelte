@@ -1,14 +1,19 @@
 <script lang="ts">
 	import '../../app.css';
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-	import AdminSidebar from "$lib/components/admin-sidebar.svelte";
+
+	import AdminSidebar from '$lib/components/admin-sidebar.svelte';
+
+	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+
 	import { Toaster } from 'svelte-sonner';
+
 	let { children } = $props();
 </script>
 
@@ -34,4 +39,4 @@
 			{@render children?.()}
 		</div>
 	</Sidebar.Inset>
-  </Sidebar.Provider>
+</Sidebar.Provider>

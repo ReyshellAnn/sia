@@ -55,7 +55,9 @@
 					// Convert timestamps to readable format
 					const createdAt = data.createdAt ? new Date(data.createdAt).toLocaleString() : 'N/A';
 					const completedAt =
-						data.completedAt instanceof Timestamp ? data.completedAt.toDate().toLocaleString() : 'N/A';
+						data.completedAt instanceof Timestamp
+							? data.completedAt.toDate().toLocaleString()
+							: 'N/A';
 
 					// Fetch user details
 					let fullName = 'Unknown User';
@@ -75,7 +77,7 @@
 						completedAt,
 						pickupTime: data.pickupTime || 'N/A',
 						userId: data.userId || '',
-						fullName,
+						fullName
 					});
 				}
 
@@ -114,8 +116,8 @@
 					<Table.Cell>
 						<ul>
 							{#each order.items as item}
-								<li class="flex gap-2 items-center">
-									<img src="{item.imageUrl}" alt="{item.name}" class="w-12 h-12 rounded" />
+								<li class="flex items-center gap-2">
+									<img src={item.imageUrl} alt={item.name} class="h-12 w-12 rounded" />
 									<span>{item.name} (₱{item.price.toFixed(2)} x {item.quantity})</span>
 								</li>
 							{/each}

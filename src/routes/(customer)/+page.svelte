@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { collection, getDocs, addDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
-	import { db } from '$lib/firebase';
-	import * as Card from '$lib/components/ui/card/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { auth } from '$lib/firebase';
+
+	import { collection, getDocs, addDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
+	import { db, auth } from '$lib/firebase';
 	import { onAuthStateChanged } from 'firebase/auth';
-	import { toast } from 'svelte-sonner';
+
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	let medicines: any[] = [];
 	let user = page.data.user;

@@ -2,19 +2,22 @@
 	import { onMount } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
+
 	import { collection, query, where, getDocs } from 'firebase/firestore';
 	import { db } from '$lib/firebase'; // Firebase Firestore reference
 	import { user } from '$lib/stores/authStore'; // Auth store
+
 	import * as Table from '$lib/components/ui/table/index.js';
 	import * as Pagination from '$lib/components/ui/pagination/index.js';
+	
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
-  
+
 	const isDesktop = new MediaQuery('(min-width: 768px)');
 	const count = 20;
 	const perPage = $derived(isDesktop.current ? 3 : 8);
 	const siblingCount = $derived(isDesktop.current ? 1 : 0);
-  
+
 	interface OrderItem {
 		imageUrl: string;
 		medicineId: string;
@@ -45,7 +48,7 @@
 				window.location.href = '/login';
 				return;
 			}
-			
+
 			try {
 				isLoading = true;
 				// Fetch orders specific to the current user
@@ -91,7 +94,7 @@
 					<Table.Cell>
 						{#if order.items && order.items.length > 0}
 							{#each order.items as item}
-								<li class="flex gap-2 items-center">
+								<li class="flex items-center gap-2">
 									<img src={item.imageUrl} alt={item.name} class="h-10 w-10 rounded" />
 									<span>{item.name} (₱{item.price.toFixed(2)} x {item.quantity})</span>
 								</li>
@@ -100,7 +103,11 @@
 							No Items
 						{/if}
 					</Table.Cell>
-					<Table.Cell>₱{order.items.reduce((acc, item) => acc + item.price * item.quantity, 0).toFixed(2)}</Table.Cell>
+					<Table.Cell
+						>₱{order.items
+							.reduce((acc, item) => acc + item.price * item.quantity, 0)
+							.toFixed(2)}</Table.Cell
+					>
 					<Table.Cell>{order.items.reduce((acc, item) => acc + item.quantity, 0)}</Table.Cell>
 					<Table.Cell>{order.status}</Table.Cell>
 					<Table.Cell>{new Date(order.createdAt).toLocaleString()}</Table.Cell>

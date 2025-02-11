@@ -1,16 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import {
-		collection,
-		getDocs,
-		query,
-		where
-	} from 'firebase/firestore';
-	import { db } from '$lib/firebase';
-	import * as Card from '$lib/components/ui/card/index.js';
 	import { goto } from '$app/navigation';
-	import { auth } from '$lib/firebase';
 	import { onAuthStateChanged } from 'firebase/auth';
+
+	import { collection, getDocs, query, where } from 'firebase/firestore';
+	import { db, auth } from '$lib/firebase';
+
+	import * as Card from '$lib/components/ui/card/index.js';
+
 	import Clock from 'lucide-svelte/icons/clock';
 	import XCircle from 'lucide-svelte/icons/circle-x';
 	import CheckCircle from 'lucide-svelte/icons/circle-check';
@@ -45,7 +42,7 @@
 						status: order.status,
 						createdAt: order.createdAt,
 						canceledAt: order.cancelledAt,
-						items: order.items,
+						items: order.items
 					};
 				});
 
@@ -59,35 +56,46 @@
 
 <div class="flex flex-wrap gap-12">
 	<div class="flex flex-[2] flex-col">
-		<span class="text-2xl font-semibold mb-2">Notifications</span>
+		<span class="mb-2 text-2xl font-semibold">Notifications</span>
 		<Card.Root>
 			<Card.Content>
 				{#if pickupNotifications.length > 0}
 					{#each pickupNotifications as pickup}
-						<div class="flex flex-col border-2 rounded-lg p-6 shadow-sm mt-4 {pickup.status === 'cancelled' ? 'border-red-500' : 'border-green-500'}">
-							<div class="flex justify-between items-center">
-								<span class="font-semibold text-lg flex items-center gap-2">
+						<div
+							class="mt-4 flex flex-col rounded-lg border-2 p-6 shadow-sm {pickup.status ===
+							'cancelled'
+								? 'border-red-500'
+								: 'border-green-500'}"
+						>
+							<div class="flex items-center justify-between">
+								<span class="flex items-center gap-2 text-lg font-semibold">
 									{#if pickup.status === 'cancelled'}
 										<XCircle class="text-red-500" size={20} /> Pickup Cancelled
 									{:else}
 										<CheckCircle class="text-green-500" size={20} /> Pickup Completed!
 									{/if}
 								</span>
-								<span class="text-sm text-gray-500">{new Date(pickup.createdAt).toLocaleString()}</span>
+								<span class="text-sm text-gray-500"
+									>{new Date(pickup.createdAt).toLocaleString()}</span
+								>
 							</div>
-							<span class="text-gray-700 font-light mt-2">
+							<span class="mt-2 font-light text-gray-700">
 								{#if pickup.status === 'cancelled'}
 									Your pickup request was cancelled.
 								{:else}
 									Your order was picked up successfully.
 								{/if}
 							</span>
-							<ul class="mt-2 text-gray-800 font-medium">
+							<ul class="mt-2 font-medium text-gray-800">
 								{#each pickup.items as item}
 									<li>{item.quantity}× {item.name}</li>
 								{/each}
 							</ul>
-							<button class="mt-4 self-start {pickup.status === 'cancelled' ? 'bg-red-500' : 'bg-green-600'} text-white py-2 px-4 rounded-lg hover:bg-opacity-80 transition text-sm">
+							<button
+								class="mt-4 self-start {pickup.status === 'cancelled'
+									? 'bg-red-500'
+									: 'bg-green-600'} rounded-lg px-4 py-2 text-sm text-white transition hover:bg-opacity-80"
+							>
 								View Order History
 							</button>
 						</div>
