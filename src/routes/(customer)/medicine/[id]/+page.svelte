@@ -3,7 +3,7 @@
 	import { collection, getDocs, addDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
@@ -12,6 +12,10 @@
 	import { auth } from '$lib/firebase';
 	import { onAuthStateChanged } from 'firebase/auth';
 	import { toast } from 'svelte-sonner';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import { Textarea } from '$lib/components/ui/textarea/index.js';
+	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 
 	let medicine: any = null;
 	let quantity = 1;
@@ -20,6 +24,44 @@
 	let user = page.data.user;
 	let loading: Record<string, boolean> = {};
 
+	let selectedRating = 0; // For star rating selection
+	let reviewText = ''; // For review input
+
+	let userReview: any = null;
+	let reviews: any[] = [];
+	let averageRating: number = 0.0;
+
+	let totalReviews = reviews.length; // Make sure this is updated after fetching reviews
+
+	const fetchReviews = async () => {
+		try {
+			const reviewsSnapshot = await getDocs(collection(db, 'medicines', medicine.id, 'reviews'));
+			reviews = reviewsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+			totalReviews = reviews.length; // Move this here!
+
+			// Check if the current user has a review
+			userReview = reviews.find((review) => review.userId === user?.uid);
+
+			// Calculate average rating and rating distribution
+			if (reviews.length > 0) {
+				const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+				averageRating = parseFloat((totalRating / reviews.length).toFixed(1));
+
+				// Update ratings array
+				ratings = [5, 4, 3, 2, 1].map((star) => ({
+					stars: star,
+					count: reviews.filter((review) => review.rating === star).length
+				}));
+			} else {
+				averageRating = 0.0;
+				ratings = [5, 4, 3, 2, 1].map((star) => ({ stars: star, count: 0 }));
+			}
+		} catch (error) {
+			console.error('Error fetching reviews:', error);
+		}
+	};
+
 	let ratings = [
 		{ stars: 5, count: 30 },
 		{ stars: 4, count: 0 },
@@ -27,6 +69,13 @@
 		{ stars: 2, count: 0 },
 		{ stars: 1, count: 1 }
 	];
+
+	const updateRatings = () => {
+		ratings = [5, 4, 3, 2, 1].map((star) => ({
+			stars: star,
+			count: reviews.filter((review) => review.rating === star).length
+		}));
+	};
 
 	const fetchMedicine = async () => {
 		currentId = page.params.id;
@@ -42,6 +91,7 @@
 
 			if (docSnap.exists()) {
 				medicine = { ...docSnap.data(), id: docSnap.id }; // Add id here
+				await fetchReviews();
 			} else {
 				console.log('No such document!');
 			}
@@ -147,6 +197,58 @@
 			loading = { ...loading, [medicine.id]: false }; // Reset loading state
 		}
 	};
+
+	const submitReview = async () => {
+		if (!user) {
+			toast.error('You must be logged in to submit a review.');
+			return;
+		}
+
+		if (!selectedRating || !reviewText.trim()) {
+			toast.error('Please provide a rating and a review.');
+			return;
+		}
+
+		try {
+			const reviewRef = collection(db, 'medicines', medicine.id, 'reviews');
+
+			// Check if the user already has a review
+			const existingReviewSnapshot = await getDocs(reviewRef);
+			const userReviewDoc = existingReviewSnapshot.docs.find(
+				(doc) => doc.data().userId === user.uid
+			);
+
+			if (userReviewDoc) {
+				// Update existing review
+				await updateDoc(doc(db, 'medicines', medicine.id, 'reviews', userReviewDoc.id), {
+					rating: selectedRating,
+					review: reviewText,
+					updatedAt: new Date().toISOString()
+				});
+				toast.success('Review updated successfully!');
+			} else {
+				// Add new review
+				await addDoc(reviewRef, {
+					userId: user.uid,
+					rating: selectedRating,
+					review: reviewText,
+					createdAt: new Date().toISOString()
+				});
+				toast.success('Review submitted successfully!');
+			}
+
+			// Reset form
+			selectedRating = 0;
+			reviewText = '';
+
+			// Refresh reviews
+			await fetchReviews();
+			updateRatings();
+		} catch (error) {
+			console.error('Error submitting review:', error);
+			toast.error('Failed to submit review.');
+		}
+	};
 </script>
 
 {#if medicine}
@@ -155,36 +257,138 @@
 			<Card.Content class="mx-auto flex flex-col items-center justify-center p-0">
 				<img src={medicine.imageUrl || '/placeholder.png'} alt={medicine.name} class="w-86" />
 
-				<div class="w-full space-y-4 rounded-lg p-4">
+				<div class="w-full space-y-4 p-4">
 					<h2 class="text-xl font-medium">REVIEW</h2>
+
 					<div class="mb-6 flex flex-row justify-between">
+						<!-- Average Rating Display -->
 						<div class="flex flex-col space-x-2">
-							<span class="text-6xl font-light">4.8</span>
+							<span class="text-6xl font-light">{averageRating}</span>
 							<div class="flex">
 								{#each Array(5) as _, i}
-									<span class={i === 4 ? 'text-gray-400' : 'text-yellow-400'}>★</span>
+									<span class={i < Math.round(averageRating) ? 'text-yellow-400' : 'text-gray-400'}
+										>★</span
+									>
 								{/each}
 							</div>
 						</div>
 
+						<!-- Rating Distribution Bars -->
 						<div class="mt-2">
 							{#each ratings as rating}
 								<div class="flex items-center">
 									<span class="text-sm font-medium">{rating.stars} ★</span>
 									<div class="ml-2 h-2 w-64 overflow-hidden rounded-full bg-gray-200">
-										<div class="h-full bg-black" style="width: {(rating.count / 31) * 100}%"></div>
+										<div
+											class="h-full bg-black"
+											style="width: {totalReviews > 0 ? (rating.count / totalReviews) * 100 : 0}%"
+										></div>
 									</div>
 									<span class="ml-2 text-sm">{rating.count}</span>
 								</div>
 							{/each}
 						</div>
 					</div>
+
 					<Separator />
+
+					<!-- Total Reviews Display -->
 					<div class="flex flex-row justify-between">
 						<p class="mt-4 text-lg font-semibold">
-							31 <span class="text-sm font-light">Reviews</span>
+							{reviews.length} <span class="text-sm font-light">Reviews</span>
 						</p>
-						<Button class=" rounded-md bg-black text-white">WRITE A REVIEW</Button>
+
+						<!-- Review Dialog -->
+						<Dialog.Root>
+							<Dialog.Trigger
+								class={buttonVariants({ variant: 'default' })}
+								onclick={() => {
+									if (userReview) {
+										selectedRating = userReview.rating;
+										reviewText = userReview.review;
+									} else {
+										selectedRating = 0;
+										reviewText = '';
+									}
+								}}
+							>
+								{userReview ? 'Edit Review' : 'Write Review'}
+							</Dialog.Trigger>
+
+							<Dialog.Content class="sm:max-w-[425px]">
+								<Dialog.Header>
+									<Dialog.Title>Write a Review</Dialog.Title>
+									<Dialog.Description>Share your thoughts about {medicine.name}</Dialog.Description>
+								</Dialog.Header>
+
+								<!-- Review Form -->
+								<div class="grid gap-4 py-4">
+									<div class="grid grid-cols-4 items-center gap-4">
+										<Label for="rating" class="text-right">Rating</Label>
+										<div class="col-span-3 flex space-x-1">
+											{#each Array(5) as _, i}
+												<button
+													type="button"
+													class={i < selectedRating
+														? 'cursor-pointer text-yellow-400'
+														: 'cursor-pointer text-gray-400'}
+													on:click={() => (selectedRating = i + 1)}
+													aria-label={`Rate ${i + 1} star${i === 0 ? '' : 's'}`}
+												>
+													★
+												</button>
+											{/each}
+										</div>
+									</div>
+
+									<div class="grid grid-cols-4 items-center gap-4">
+										<Label for="review" class="text-right">Review</Label>
+										<Textarea
+											id="review"
+											bind:value={reviewText}
+											class="col-span-3 rounded border p-2"
+											placeholder="Write your review here..."
+										></Textarea>
+									</div>
+								</div>
+
+								<Dialog.Footer>
+									<Button onclick={submitReview} disabled={!selectedRating || !reviewText.trim()}
+										>Submit Review</Button
+									>
+								</Dialog.Footer>
+							</Dialog.Content>
+						</Dialog.Root>
+					</div>
+					<div class="mt-6">
+						<ScrollArea class="w-full h-40">
+						{#if reviews.length > 0}
+							{#each reviews as review}
+
+								<div class="rounded-lg border p-4 shadow-sm mb-2">
+									<div class="flex items-center space-x-2">
+										<strong class="text-lg"
+											>{review.userId === user?.uid ? 'You' : 'Anonymous'}</strong
+										>
+										<div class="flex">
+											{#each Array(5) as _, i}
+												<span class={i < review.rating ? 'text-yellow-400' : 'text-gray-400'}
+													>★</span
+												>
+											{/each}
+										</div>
+									</div>
+									<p class="mt-2 text-gray-700">{review.review}</p>
+									<p class="text-sm text-gray-500">
+										{new Date(review.createdAt).toLocaleDateString()}
+									</p>
+								</div>
+
+							{/each}
+						{:else}
+							<p class="text-gray-500">No reviews yet. Be the first to write one!</p>
+						{/if}
+					</ScrollArea>	
 					</div>
 				</div>
 			</Card.Content>
