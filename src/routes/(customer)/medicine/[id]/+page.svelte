@@ -4,13 +4,22 @@
 	import { goto, onNavigate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 
-	import { collection, getDocs, addDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
+	import {
+		collection,
+		getDocs,
+		addDoc,
+		updateDoc,
+		doc,
+		getDoc,
+		deleteDoc
+	} from 'firebase/firestore';
 	import { db, auth } from '$lib/firebase';
 	import { onAuthStateChanged } from 'firebase/auth';
 
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
@@ -24,6 +33,7 @@
 	let currentId: string;
 	let user = page.data.user;
 	let loading: Record<string, boolean> = {};
+	let postAnonymously = false;
 
 	let selectedRating = 0; // For star rating selection
 	let reviewText = ''; // For review input
@@ -211,36 +221,47 @@
 		}
 
 		try {
-			const reviewRef = collection(db, 'medicines', medicine.id, 'reviews');
+			// Fetch user's fullName from 'users' collection
+			const userDocRef = doc(db, 'users', user.uid);
+			const userDocSnap = await getDoc(userDocRef);
 
-			// Check if the user already has a review
+			if (!userDocSnap.exists()) {
+				toast.error('User information not found.');
+				return;
+			}
+
+			const { fullName } = userDocSnap.data();
+
+			const reviewRef = collection(db, 'medicines', medicine.id, 'reviews');
 			const existingReviewSnapshot = await getDocs(reviewRef);
 			const userReviewDoc = existingReviewSnapshot.docs.find(
 				(doc) => doc.data().userId === user.uid
 			);
 
+			const reviewData = {
+				userId: user.uid,
+				fullName: postAnonymously ? 'Anonymous' : fullName, // Use fullName if not anonymous
+				rating: selectedRating,
+				review: reviewText,
+				createdAt: new Date().toISOString(),
+				anonymous: postAnonymously
+			};
+
 			if (userReviewDoc) {
-				// Update existing review
 				await updateDoc(doc(db, 'medicines', medicine.id, 'reviews', userReviewDoc.id), {
-					rating: selectedRating,
-					review: reviewText,
+					...reviewData,
 					updatedAt: new Date().toISOString()
 				});
 				toast.success('Review updated successfully!');
 			} else {
-				// Add new review
-				await addDoc(reviewRef, {
-					userId: user.uid,
-					rating: selectedRating,
-					review: reviewText,
-					createdAt: new Date().toISOString()
-				});
+				await addDoc(reviewRef, reviewData);
 				toast.success('Review submitted successfully!');
 			}
 
 			// Reset form
 			selectedRating = 0;
 			reviewText = '';
+			postAnonymously = false;
 
 			// Refresh reviews
 			await fetchReviews();
@@ -248,6 +269,26 @@
 		} catch (error) {
 			console.error('Error submitting review:', error);
 			toast.error('Failed to submit review.');
+		}
+	};
+
+	const deleteReview = async () => {
+		if (!userReview) {
+			toast.error('No review to delete.');
+			return;
+		}
+
+		try {
+			await deleteDoc(doc(db, 'medicines', medicine.id, 'reviews', userReview.id));
+			toast.success('Review deleted successfully!');
+
+			// Refresh reviews after deletion
+			userReview = null;
+			await fetchReviews();
+			updateRatings();
+		} catch (error) {
+			console.error('Error deleting review:', error);
+			toast.error('Failed to delete review.');
 		}
 	};
 </script>
@@ -351,12 +392,53 @@
 											placeholder="Write your review here..."
 										></Textarea>
 									</div>
+
+									<div class="grid grid-cols-4 items-center gap-4">
+										<Label for="anonymous" class="text-right">Post Anonymously</Label>
+										<input
+											id="anonymous"
+											type="checkbox"
+											bind:checked={postAnonymously}
+											class="col-span-3 h-4 w-4"
+										/>
+									</div>
 								</div>
 
 								<Dialog.Footer>
-									<Button onclick={submitReview} disabled={!selectedRating || !reviewText.trim()}
-										>Submit Review</Button
-									>
+									<Button onclick={submitReview} disabled={!selectedRating || !reviewText.trim()}>
+										{userReview ? 'Update Review' : 'Submit Review'}
+									</Button>
+
+									{#if userReview}
+										<AlertDialog.Root>
+											<AlertDialog.Trigger class={buttonVariants({ variant: 'destructive' })}>
+												Delete Review
+											</AlertDialog.Trigger>
+
+											<AlertDialog.Content>
+												<AlertDialog.Header>
+													<AlertDialog.Title
+														>Are you sure you want to delete your review?</AlertDialog.Title
+													>
+													<AlertDialog.Description>
+														This action cannot be undone. Your review will be permanently removed.
+													</AlertDialog.Description>
+												</AlertDialog.Header>
+
+												<AlertDialog.Footer>
+													<AlertDialog.Cancel class={buttonVariants({ variant: 'outline' })}>
+														Cancel
+													</AlertDialog.Cancel>
+													<AlertDialog.Action
+														class={buttonVariants({ variant: 'destructive' })}
+														onclick={deleteReview}
+													>
+														Delete
+													</AlertDialog.Action>
+												</AlertDialog.Footer>
+											</AlertDialog.Content>
+										</AlertDialog.Root>
+									{/if}
 								</Dialog.Footer>
 							</Dialog.Content>
 						</Dialog.Root>
@@ -367,9 +449,9 @@
 								{#each reviews as review}
 									<div class="mb-2 rounded-lg border p-4 shadow-sm">
 										<div class="flex items-center space-x-2">
-											<strong class="text-lg"
-												>{review.userId === user?.uid ? 'You' : 'Anonymous'}</strong
-											>
+											<p class="font-semibold">
+												{review.anonymous ? 'Anonymous' : review.fullName}
+											</p>
 											<div class="flex">
 												{#each Array(5) as _, i}
 													<span class={i < review.rating ? 'text-yellow-400' : 'text-gray-400'}
@@ -382,6 +464,39 @@
 										<p class="text-sm text-gray-500">
 											{new Date(review.createdAt).toLocaleDateString()}
 										</p>
+
+										{#if review.userId === user?.uid}
+											<AlertDialog.Root>
+												<AlertDialog.Trigger
+													class={`h-6 w-14 text-xs ${buttonVariants({ variant: 'destructive' })}`}
+												>
+													Delete
+												</AlertDialog.Trigger>
+
+												<AlertDialog.Content>
+													<AlertDialog.Header>
+														<AlertDialog.Title
+															>Are you sure you want to delete your review?</AlertDialog.Title
+														>
+														<AlertDialog.Description>
+															This action cannot be undone. Your review will be permanently removed.
+														</AlertDialog.Description>
+													</AlertDialog.Header>
+
+													<AlertDialog.Footer>
+														<AlertDialog.Cancel class={buttonVariants({ variant: 'outline' })}>
+															Cancel
+														</AlertDialog.Cancel>
+														<AlertDialog.Action
+															class={buttonVariants({ variant: 'destructive' })}
+															onclick={deleteReview}
+														>
+															Delete
+														</AlertDialog.Action>
+													</AlertDialog.Footer>
+												</AlertDialog.Content>
+											</AlertDialog.Root>
+										{/if}
 									</div>
 								{/each}
 							{:else}
@@ -398,10 +513,13 @@
 				<!-- Star Rating -->
 				<div class="flex items-center gap-1">
 					{#each Array(5) as _, i}
-						<span class={i < medicine.rating ? 'text-yellow-500' : 'text-gray-300'}>★</span>
+						<span class={i < Math.round(averageRating) ? 'text-yellow-500' : 'text-gray-300'}
+							>★</span
+						>
 					{/each}
-					<span class="text-sm text-gray-500">({medicine.ratingCount})</span>
+					<span class="text-sm text-gray-500">({totalReviews})</span>
 				</div>
+
 				<span class="text-xl font-medium">₱{medicine.price}</span>
 				<span class="text-sm font-normal">Stock: {medicine.stock}</span>
 				<Separator />

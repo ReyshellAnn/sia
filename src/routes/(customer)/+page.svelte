@@ -22,18 +22,40 @@
 	});
 
 	onMount(async () => {
-		try {
-			const querySnapshot = await getDocs(collection(db, 'medicines'));
-			medicines = querySnapshot.docs.map((doc) => ({
-				id: doc.id,
-				name: doc.data().name,
-				price: doc.data().price,
-				image: doc.data().imageUrl || '/placeholder.png'
-			}));
-		} catch (error) {
-			console.error('Error fetching medicines:', error);
-		}
-	});
+	try {
+		const querySnapshot = await getDocs(collection(db, 'medicines'));
+		medicines = await Promise.all(
+			querySnapshot.docs.map(async (docSnap) => {
+				const medicineData = {
+					id: docSnap.id,
+					name: docSnap.data().name,
+					price: docSnap.data().price,
+					image: docSnap.data().imageUrl || '/placeholder.png'
+				};
+
+				// Fetch reviews for each medicine
+				const reviewsSnapshot = await getDocs(collection(db, 'medicines', docSnap.id, 'reviews'));
+				const reviews = reviewsSnapshot.docs.map((reviewDoc) => reviewDoc.data());
+
+				// Calculate average rating and total reviews
+				const totalReviews = reviews.length;
+				const averageRating =
+					totalReviews > 0
+						? parseFloat((reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews).toFixed(1))
+						: 0.0;
+
+				return {
+					...medicineData,
+					averageRating,
+					totalReviews
+				};
+			})
+		);
+	} catch (error) {
+		console.error('Error fetching medicines:', error);
+	}
+});
+
 
 	const goToMedicine = (id: string) => {
 		goto(`/medicine/${id}`);
@@ -119,13 +141,14 @@
 				<span class="text-lg font-normal">{medicine.name}</span>
 				<span class="text-lg font-medium">₱{medicine.price}</span>
 
-				<!-- Star Rating -->
 				<div class="flex items-center gap-1">
 					{#each Array(5) as _, i}
-						<span class={i < medicine.rating ? 'text-yellow-500' : 'text-gray-300'}>★</span>
+						<span class={i < Math.round(medicine.averageRating) ? 'text-yellow-500' : 'text-gray-300'}>★</span>
 					{/each}
-					<span class="text-sm text-gray-500">({medicine.ratingCount})</span>
+					<span class="text-sm text-gray-500">({medicine.totalReviews})</span>
 				</div>
+				
+				
 
 				<Button
 					class="w-full bg-orange-400 hover:bg-orange-500"
