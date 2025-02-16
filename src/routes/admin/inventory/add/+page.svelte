@@ -167,89 +167,88 @@
 	});
 </script>
 
-<!-- Render content only if the user is authorized -->
 {#if isAuthorized}
-	<header class="flex flex-row justify-between px-20">
-		<div>
-			<Button href="/admin/inventory" variant="ghost" class="rounded-full">
-				<ArrowLeft />
-			</Button>
-			<span class="text-2xl font-semibold">Add Medicine</span>
-		</div>
+<header class="w-full mx-auto flex justify-between items-center px-6 py-3 bg-white shadow-sm rounded-lg">
+	<div class="flex items-center space-x-3">
+		<Button href="/admin/inventory" variant="ghost" class="rounded-full">
+			<ArrowLeft />
+		</Button>
+		<span class="text-2xl font-semibold">💊 Add Medicine</span>
+	</div>
 
-		<div class="flex flex-row space-x-2">
-			<Button onclick={handleSubmit} disabled={isLoading}>
-				{#if isLoading}
-					<span
-						class="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"
-					></span>
-				{:else}
-					<Check />Submit
-				{/if}
-			</Button>
-		</div>
-	</header>
-	<div class="flex flex-row space-x-8 px-20">
-		<!-- Left Div -->
-		<div class="flex flex-[2] flex-col space-y-6">
-			<Card.Root class="bg-primary-foreground">
-				<Card.Content class="space-y-3 py-3 pb-6">
+	<Button onclick={handleSubmit} disabled={isLoading} class="px-5 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition">
+		{#if isLoading}
+			<span class="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"></span>
+		{:else}
+			<Check /> Submit
+		{/if}
+	</Button>
+</header>
+
+	<div class="grid grid-cols-3 gap-8 px-20 py-6">
+		<!-- Left Column (General Information & Pricing) -->
+		<div class="col-span-2 space-y-6">
+			<Card.Root class="bg-white shadow-md rounded-lg">
+				<Card.Content class="space-y-4 p-5">
 					<span class="text-lg font-medium">General Information</span>
 					<div>
-						<span class="text-sm font-medium text-muted-foreground">Name of Medicine</span>
-						<Input type="text" bind:value={name} />
+						<label for="name" class="text-sm font-medium text-muted-foreground">Name of Medicine</label>
+						<Input type="text" id="name" bind:value={name} />
 					</div>
+					
 					<div>
-						<span class="text-sm font-medium text-muted-foreground">Description</span>
-						<Textarea class="min-h-40" bind:value={description} />
+						<label for="description" class="text-sm font-medium text-muted-foreground">Description</label>
+						<Textarea id="description" class="min-h-40" bind:value={description} />
 					</div>
 				</Card.Content>
 			</Card.Root>
-			<div class="flex flex-row space-x-4">
-				<Card.Root class="flex-1 bg-primary-foreground">
-					<Card.Content class="space-y-3 py-3 pb-6">
-						<span class="text-lg font-medium">Pricing And Stock</span>
-						<div class="flex flex-row space-x-4">
-							<div class="flex-1">
-								<span class="text-sm font-medium text-muted-foreground">Price</span>
-								<Input type="number" bind:value={price} />
-							</div>
-							<div class="flex-1">
-								<span class="text-sm font-medium text-muted-foreground">Stock</span>
-								<Input type="number" bind:value={stock} />
-							</div>
+
+			<Card.Root class="bg-white shadow-md rounded-lg">
+				<Card.Content class="space-y-4 p-5">
+					<span class="text-lg font-medium">Pricing And Stock</span>
+					<div class="flex flex-row space-x-4">
+						<div class="flex-1">
+							<label for="price" class="text-sm font-medium text-muted-foreground">Price</label>
+							<Input type="number" id="price" bind:value={price} />
 						</div>
-					</Card.Content>
-				</Card.Root>
-			</div>
+						<div class="flex-1">
+							<label for="stock" class="text-sm font-medium text-muted-foreground">Stock</label>
+							<Input type="number" id="stock" bind:value={stock} />
+						</div>
+					</div>
+				</Card.Content>
+			</Card.Root>
 		</div>
-		<!-- Right Div -->
-		<div class="flex flex-[1] flex-col space-y-6">
-			<!-- Upload Image Section -->
-			<Card.Root class="bg-primary-foreground">
-				<Card.Content class="space-y-3">
+
+		<!-- Right Column (Image Upload & Category) -->
+		<div class="space-y-6">
+			<Card.Root class="bg-white shadow-md rounded-lg">
+				<Card.Content class="space-y-4 p-5">
 					<span class="text-lg font-medium">Upload Image</span>
-					<div class="flex flex-col items-center border">
+					<div class="flex flex-col items-center justify-center border border-gray-300 rounded-lg p-4">
 						{#if imageUrl}
-							<img src={imageUrl} alt="" class="w-40" />
+						<Input id="picture" type="file" accept="image/*" onchange={handleFileChange} />
 						{:else}
-							<img src="/placeholder.png" alt="Placeholder" class="w-40" />
+							<img src="/placeholder.png" alt="Placeholder" class="w-40 h-40 object-cover rounded-lg" />
 						{/if}
 					</div>
 				</Card.Content>
-				<Card.Footer>
-					<Input id="picture" type="file" accept="image/*" onchange={handleFileChange} />
-					<Button onclick={uploadImage}>Upload</Button>
+				<Card.Footer class="flex justify-between p-4">
+					<label class="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+						<input id="picture" type="file" accept="image/*" class="hidden" onchange={handleFileChange} />
+						Choose File
+					</label>
+					<Button onclick={uploadImage} class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Upload</Button>
 				</Card.Footer>
 			</Card.Root>
-			<Card.Root class="flex-1 bg-primary-foreground">
-				<Card.Content class="space-y-3 py-3">
+
+			<Card.Root class="bg-white shadow-md rounded-lg">
+				<Card.Content class="space-y-4 p-5">
 					<span class="text-lg font-medium">Category</span>
 					<Select.Root type="single" name="medicineCategory" bind:value>
-						<Select.Trigger class="w-full">
+						<Select.Trigger class="w-full p-2 border border-gray-300 rounded-lg">
 							{value ? categories.find((cat) => cat.value === value)?.label : 'Select a category'}
 						</Select.Trigger>
-
 						<Select.Content>
 							<Select.Group>
 								{#each categories as category}
@@ -262,9 +261,9 @@
 					</Select.Root>
 
 					<Dialog.Root>
-						<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}
-							>Manage Categories</Dialog.Trigger
-						>
+						<Dialog.Trigger class="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+							Manage Categories
+						</Dialog.Trigger>
 						<Dialog.Content class="sm:max-w-[425px]">
 							<Dialog.Header>
 								<Dialog.Title>Manage Category</Dialog.Title>
@@ -278,6 +277,5 @@
 		</div>
 	</div>
 {:else if errorMessage}
-	<p style="color: red;">{errorMessage}</p>
-	<!-- Display error message if any -->
+	<p class="text-red-600 text-center mt-4">{errorMessage}</p>
 {/if}

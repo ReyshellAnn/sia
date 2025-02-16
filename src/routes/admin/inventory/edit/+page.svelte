@@ -236,16 +236,17 @@
 <!-- Render content only if the user is authorized -->
 {#if isAuthorized}
 	{#if !isLoading}
-		<header class="flex flex-row justify-between px-20">
+		<header class="w-full mx-auto flex justify-between items-center px-6 py-3 bg-white shadow-sm rounded-lg">
 			<div>
 				<Button href="/admin/inventory" variant="ghost" class="rounded-full">
 					<ArrowLeft />
 				</Button>
-				<span class="text-2xl font-semibold">Edit Medicine</span>
+				<span class="text-2xl font-semibold">✏️ Edit Medicine</span>
+
 			</div>
 
 			<div class="flex flex-row space-x-2">
-				<Button onclick={handleSubmit} disabled={isSubmitLoading}>
+				<Button onclick={handleSubmit} disabled={isSubmitLoading} class="px-5 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition">
 					{#if isSubmitLoading}
 						<span
 							class="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"
@@ -325,8 +326,8 @@
 						</Select.Root>
 
 						<Dialog.Root>
-							<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}
-								>Manage Categories</Dialog.Trigger
+							<Dialog.Trigger class="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+								Manage Categories</Dialog.Trigger
 							>
 							<Dialog.Content class="sm:max-w-[425px]">
 								<Dialog.Header>

@@ -44,6 +44,7 @@
 	let selectedRow: Medicine | null = null; // Track the selected row
 	let isLoading = $state(false); // Loading state
 	let isDeleteDialogOpen = $state(false); // Controls the alert dialog
+	let expandedDescriptions = $state({});
 
 	onMount(async () => {
 		// Check if the user is authenticated
@@ -141,90 +142,81 @@
 
 <!-- Render content only if the user is authorized -->
 {#if isAuthorized}
-	<header class="flex flex-row justify-between px-2">
-		<span class="text-2xl font-semibold">Inventory List</span>
+	<header class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 shadow-md rounded-lg mb-4">
+		<span class="text-2xl font-semibold text-gray-700">📋 Inventory List</span>
+
 		<div class="flex flex-row space-x-2">
-			<Input type="search" placeholder="Search Medicine" class="w-sm" />
-			<Button href="/admin/inventory/add"><Plus />Add Medicine</Button>
+			<Input type="search" placeholder="Search Medicine" class="w-[200px] sm:w-[250px] border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+			<Button href="/admin/inventory/add" class="flex items-center gap-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+				<Plus class="w-4 h-4" />
+				Add Medicine
+			</Button>
 		</div>
 	</header>
 
-	<Table.Root>
-		<Table.Header>
-			<Table.Row>
-				<Table.Head>Name</Table.Head>
-				<Table.Head>Category</Table.Head>
-				<Table.Head>Description</Table.Head>
-				<Table.Head>Price</Table.Head>
-				<Table.Head>Stock</Table.Head>
-				<Table.Head>Actions</Table.Head>
-			</Table.Row>
-		</Table.Header>
-		<Table.Body>
-			{#each medicines as medicine (medicine.id)}
+	<div class="overflow-x-auto bg-white shadow-md rounded-lg">
+		<Table.Root class="w-full text-left border-collapse">
+			<Table.Header class="bg-gray-100 text-gray-700">
 				<Table.Row>
-					<Table.Cell class="font-medium">
-						{#if medicine.imageUrl}
-							<img src={medicine.imageUrl} alt={medicine.name} class="h-10 w-10 rounded" />
-						{:else}
-							No Image
-						{/if}
-						{medicine.name}
-					</Table.Cell>
-					<Table.Cell>{medicine.category}</Table.Cell>
-					<Table.Cell>{medicine.description}</Table.Cell>
-					<Table.Cell>${medicine.price.toFixed(2)}</Table.Cell>
-					<Table.Cell>{medicine.stock}</Table.Cell>
-					<Table.Cell>
-						<AlertDialog.Root bind:open={isDeleteDialogOpen}>
-							<AlertDialog.Trigger
-								class={buttonVariants({ variant: 'ghost' })}
-								onclick={() => openDeleteDialog(medicine)}
-							>
-								<Trash2 />
-							</AlertDialog.Trigger>
-
-							<AlertDialog.Content class="max-w-sm">
-								<AlertDialog.Header>
-									<AlertDialog.Title>Are you sure?</AlertDialog.Title>
-									<AlertDialog.Description>This action cannot be undone.</AlertDialog.Description>
-								</AlertDialog.Header>
-								<AlertDialog.Footer>
-									<AlertDialog.Cancel
-										onclick={() => {
-											isDeleteDialogOpen = false; // Close the dialog without deleting
-										}}
-									>
-										Cancel
-									</AlertDialog.Cancel>
-
-									<AlertDialog.Action
-										onclick={() => {
-											if (selectedRow) {
-												deleteRow(selectedRow);
-											}
-										}}
-										disabled={isLoading}
-									>
-										{#if isLoading}
-											<span
-												class="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"
-											></span>
-										{:else}
-											Delete
-										{/if}
-									</AlertDialog.Action>
-								</AlertDialog.Footer>
-							</AlertDialog.Content>
-						</AlertDialog.Root>
-						<Button href={`/admin/inventory/edit?id=${medicine.id}`} variant="ghost">
-							<Pencil />
-						</Button>
-					</Table.Cell>
+					<Table.Head class="py-3 px-4">Name</Table.Head>
+					<Table.Head class="py-3 px-4">Category</Table.Head>
+					<Table.Head class="py-3 px-4">Description</Table.Head>
+					<Table.Head class="py-3 px-4">Price</Table.Head>
+					<Table.Head class="py-3 px-4">Stock</Table.Head>
+					<Table.Head class="py-3 px-4 text-center">Actions</Table.Head>
 				</Table.Row>
-			{/each}
-		</Table.Body>
-	</Table.Root>
+			</Table.Header>
+			<Table.Body>
+				{#each medicines as medicine (medicine.id)}
+					<Table.Row class="border-b hover:bg-gray-50 transition">
+						<Table.Cell class="py-3 px-4 flex items-center gap-3">
+							{#if medicine.imageUrl}
+								<img src={medicine.imageUrl} alt={medicine.name} class="h-10 w-10 rounded-full border border-gray-300" />
+							{:else}
+								<span class="text-gray-400">No Image</span>
+							{/if}
+							<span class="font-medium">{medicine.name}</span>
+						</Table.Cell>
+						<Table.Cell class="py-3 px-4">{medicine.category}</Table.Cell>
+						<Table.Cell class="py-3 px-4 whitespace-normal">{medicine.description}</Table.Cell>
+						<Table.Cell class="py-3 px-4 font-semibold text-green-600">₱{medicine.price.toFixed(2)}</Table.Cell>
+						<Table.Cell class="py-3 px-4">{medicine.stock}</Table.Cell>
+						<Table.Cell class="py-3 px-4 flex justify-center gap-2">
+							<AlertDialog.Root bind:open={isDeleteDialogOpen}>
+								<AlertDialog.Trigger class="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition" onclick={() => openDeleteDialog(medicine)}>
+									<Trash2 class="w-4 h-4" />
+								</AlertDialog.Trigger>
+
+								<AlertDialog.Content class="max-w-sm bg-white shadow-lg rounded-lg p-6">
+									<AlertDialog.Header>
+										<AlertDialog.Title class="text-lg font-semibold text-gray-800">Are you sure?</AlertDialog.Title>
+										<AlertDialog.Description class="text-sm text-gray-600">
+											This action cannot be undone.
+										</AlertDialog.Description>
+									</AlertDialog.Header>
+									<AlertDialog.Footer class="flex justify-end space-x-2">
+										<AlertDialog.Cancel class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition" onclick={() => { isDeleteDialogOpen = false; }}>
+											Cancel
+										</AlertDialog.Cancel>
+										<AlertDialog.Action class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition" onclick={() => { if (selectedRow) { deleteRow(selectedRow); } }} disabled={isLoading}>
+											{#if isLoading}
+												<span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+											{:else}
+												Delete
+											{/if}
+										</AlertDialog.Action>
+									</AlertDialog.Footer>
+								</AlertDialog.Content>
+							</AlertDialog.Root>
+							<Button href={`/admin/inventory/edit?id=${medicine.id}`} variant="ghost" class="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+								<Pencil class="w-4 h-4 text-gray-600" />
+							</Button>
+						</Table.Cell>
+					</Table.Row>
+				{/each}
+			</Table.Body>
+		</Table.Root>
+	</div>
 
 	<Pagination.Root {count} {perPage} {siblingCount} class="items-end">
 		{#snippet children({ pages, currentPage })}

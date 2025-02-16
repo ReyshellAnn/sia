@@ -186,50 +186,37 @@
 </script>
 
 {#if isAuthorized}
-	<div class="admin-dashboard space-y-2">
-		<span class="text-2xl font-semibold">Pickup list</span>
+	<div class="admin-dashboard space-y-4 p-6 bg-white shadow-lg rounded-xl border border-gray-200">
+		<span class="text-2xl font-semibold text-gray-800">📦 Pickup List</span>
 
 		{#if pickupItems.length === 0}
-			<p>No pickup orders available.</p>
+			<p class="text-gray-600">No pickup orders available.</p>
 		{:else}
-			<div class="pickup-items flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+		<div class="pickup-items flex flex-col gap-2 sm:flex-row sm:flex-wrap">
 				{#each pickupItems as pickupItem (pickupItem.id)}
-					<Card.Root class="pickup-item w-full min-w-[300px] max-w-[300px]">
-						<Card.Content class="space-y-4 p-3">
-							<div class="flex flex-row justify-between">
+					<Card.Root class="pickup-item w-full max-w-sm bg-gray-50 shadow-md rounded-xl border border-gray-300 overflow-hidden">
+						<Card.Content class="space-y-4 p-4">
+							<div class="flex justify-between items-center">
 								<div class="flex flex-col">
-									<span class="text-sm font-medium">{pickupItem.fullName}</span>
-									<span class="text-xs text-gray-500"
-										>Pickup Time: {pickupItem.pickupTime || 'N/A'}</span
-									>
+									<span class="text-sm font-medium text-gray-800">{pickupItem.fullName}</span>
+									<span class="text-xs text-gray-500">Pickup Time: {pickupItem.pickupTime || 'N/A'}</span>
 								</div>
-
 								<Avatar.Root>
-									<Avatar.Image
-										src={pickupItem.profileImageUrl || 'https://placehold.co/50x50'}
-										alt={pickupItem.fullName || 'User Avatar'}
-									/>
-									<Avatar.Fallback
-										>{pickupItem.fullName ? pickupItem.fullName.charAt(0) : 'U'}</Avatar.Fallback
-									>
+									<Avatar.Image src={pickupItem.profileImageUrl || 'https://placehold.co/50x50'} alt={pickupItem.fullName || 'User Avatar'} class="w-10 h-10 rounded-full border border-gray-300 shadow-sm" />
+									<Avatar.Fallback>{pickupItem.fullName ? pickupItem.fullName.charAt(0) : 'U'}</Avatar.Fallback>
 								</Avatar.Root>
 							</div>
+
 							<ScrollArea class="h-36 px-2">
-								<div class="space-y-2">
+								<div class="space-y-3">
 									{#each pickupItem.items as item}
-										<div class="flex flex-row">
-											<div>
-												<img
-													src={item.imageUrl || 'https://placehold.co/50x50'}
-													alt={item.name || 'Order Image'}
-													class="w-16 rounded-full object-cover"
-												/>
-											</div>
-											<div class="flex flex-1 flex-col p-2">
-												<span class="text-sm font-medium">{item.name}</span>
-												<div class="flex justify-between text-sm">
-													<span class=" text-xs text-gray-500">₱{item.price} </span>
-													<span class=" text-xs text-gray-500">Qty: {item.quantity}</span>
+										<div class="flex items-center gap-3 p-2 bg-white rounded-lg shadow-sm border border-gray-200">
+											<img src={item.imageUrl || 'https://placehold.co/50x50'} alt={item.name || 'Order Image'} class="w-12 h-12 rounded-lg object-cover border border-gray-300" />
+											<div class="flex flex-col flex-1">
+												<span class="text-sm font-medium text-gray-800">{item.name}</span>
+												<div class="flex justify-between text-xs text-gray-500">
+													<span>₱{item.price}</span>
+													<span>Qty: {item.quantity}</span>
 												</div>
 											</div>
 										</div>
@@ -237,32 +224,18 @@
 								</div>
 							</ScrollArea>
 
-							<!-- Added Separator -->
-							<Separator class="mb-2" />
+							<Separator class="my-2 border-gray-300" />
 
-							<!-- Order Summary -->
-							<div class="mt-auto flex flex-row">
-								<div class="flex flex-1 flex-col">
+							<div class="flex justify-between items-center">
+								<div class="flex flex-col">
 									<span class="text-xs text-gray-500">{pickupItem.items.length} items</span>
-									<span class="text-sm font-medium">
-										₱ {pickupItem.items.reduce(
-											(total: number, order: { price: number; quantity: number }) =>
-												total + order.price * order.quantity,
-											0
-										)}
+									<span class="text-sm font-semibold text-gray-800">
+										₱ {pickupItem.items.reduce((total, order) => total + order.price * order.quantity, 0)}
 									</span>
 								</div>
 								<div class="space-x-2">
-									<Button
-										onclick={() => markAllAsCompleted(pickupItem.userId)}
-										variant="outline"
-										class="text-green-500 hover:text-green-500"><Check /></Button
-									>
-									<Button
-										onclick={() => cancelAllOrders(pickupItem.userId)}
-										variant="outline"
-										class="text-red-500 hover:text-red-500"><X /></Button
-									>
+									<Button onclick={() => markAllAsCompleted(pickupItem.userId)} variant="outline" class="text-green-500 border-green-500 hover:bg-green-500 hover:text-white"><Check /></Button>
+									<Button onclick={() => cancelAllOrders(pickupItem.userId)} variant="outline" class="text-red-500 border-red-500 hover:bg-red-500 hover:text-white"><X /></Button>
 								</div>
 							</div>
 						</Card.Content>
@@ -272,5 +245,5 @@
 		{/if}
 	</div>
 {:else}
-	<div class="p-4">Access Denied</div>
+	<div class="p-6 text-center text-red-600 font-semibold">Access Denied</div>
 {/if}
