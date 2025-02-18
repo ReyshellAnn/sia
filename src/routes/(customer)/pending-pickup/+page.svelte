@@ -58,52 +58,56 @@
 	});
 </script>
 
-<span class="text-2xl font-semibold">Current Pickups</span>
-{#if loading}
-	<div>Loading...</div>
-{:else}
-	<div class="flex w-3/4 flex-col gap-2">
-		<span class="text-sm font-light text-gray-600">
-			Please have your payment ready upon pickup. Show your order ID at the counter. Orders not
-			picked up promptly may be subject to cancellation at the pharmacy's discretion.
-		</span>
-	</div>
+<div class="container p-6 bg-white shadow-lg rounded-lg min-h flex flex-col">
+	<span class="text-2xl font-semibold">📦 Current Pickups</span>
 
-	<!-- Display Pickup Orders -->
-	<div class="flex flex-col gap-4">
-		{#each pickupOrders as order}
-			<Card.Root>
-				<Card.Content>
-					<div class="flex flex-col gap-2">
-						<span class="text-sm text-gray-600">Pickup Time: {order.pickupTime}</span>
+	{#if loading}
+		<div class="text-center text-lg text-gray-500 mt-4">Loading...</div>
+	{:else}
+		<div class="text-sm font-light text-gray-600 mt-4">
+			<span class="text-sm font-light text-gray-600">
+				Please have your payment ready upon pickup. Show your order ID at the counter. Orders not
+				picked up promptly may be subject to cancellation at the pharmacy's discretion.
+			</span>
+		</div>
 
-						<!-- Display each item in the order -->
-						{#each order.items as item}
-							<div class="flex flex-row items-center justify-between border-b pb-2">
-								<div class="flex flex-row space-x-4">
-									<img src={item.imageUrl} alt={item.name} class="w-20" />
-									<span>{item.name}</span>
+		<!-- Display Pickup Orders -->
+		<div class="flex flex-col gap-6 mt-8 ">
+			{#each pickupOrders as order}
+				<Card.Root class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+					<Card.Content>
+						<div class="flex flex-col gap-2 p-4">
+							<span class="text-sm font-semibold text-gray-700">Pickup Time: {order.pickupTime}</span>
+
+							<!-- Display each item in the order -->
+							{#each order.items as item}
+								<div class="flex items-center justify-between border-b border-gray-300 pb-4">
+									<div class="flex flex-row space-x-4">
+										<img src={item.imageUrl} alt={item.name} class="w-20 h-20 object-cover rounded-md"/>
+										<span class="p-8 text-sm text-gray-700 font-semibold">{item.name}</span>
+									</div>
+
+									<div class="flex flex-col items-center text-sm text-gray-600">
+										<span class="text-sm text-gray-600">Qty</span>
+										<span class="text-sm text-gray-700 font-semibold">{item.quantity}</span>
+									</div>
+
+									<div class="flex flex-col items-center text-sm text-gray-600">
+										<span class="text-sm text-gray-600">Price</span>
+										<span class="text-sm text-gray-700 font-semibold">₱{item.price}</span>
+									</div>
 								</div>
+							{/each}
 
-								<div class="flex flex-col text-center">
-									<span class="text-sm text-gray-600">Price</span>
-									<span>₱{item.price}</span>
-								</div>
-
-								<div class="flex flex-col text-center">
-									<span class="text-sm text-gray-600">Qty</span>
-									<span>{item.quantity}</span>
-								</div>
+							<!-- Display order total -->
+							<div class="flex justify-end items-center mt-4">
+								<span class="text-lg font-semibold text-gray-600">Total:
+								<span class="text-lg font-semibold text-green-700">₱{order.orderTotal}</span>
 							</div>
-						{/each}
-
-						<!-- Display order total -->
-						<div class="mt-2 text-right font-semibold">
-							Total: ₱{order.orderTotal}
 						</div>
-					</div>
-				</Card.Content>
-			</Card.Root>
-		{/each}
-	</div>
-{/if}
+					</Card.Content>
+				</Card.Root>
+			{/each}
+		</div>
+	{/if}
+</div>

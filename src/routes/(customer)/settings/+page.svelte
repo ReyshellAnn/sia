@@ -142,83 +142,74 @@
 	}
 </script>
 
-<div class="flex h-screen w-full flex-row">
+<div class="flex items-center justify-center p-4">
 	<Toaster />
-	<div class="mx-auto flex w-full flex-col rounded-lg bg-white p-6 shadow-md sm:flex-row">
-		<!-- Left column for Edit Profile -->
-		<div class="flex-1 space-y-6">
-			<h2 class="text-center text-2xl font-semibold">Edit Profile</h2>
-			<p class="mb-4 text-center text-gray-600">Update your account details below</p>
+	<div class="mx-auto flex w-full max-w-4xl flex-col rounded-xl bg-white p-8 shadow-lg sm:flex-row sm:space-x-8">
+		<!-- Left Column: Profile Info -->
+		<div class="flex flex-col items-center space-y-6 sm:w-1/2">
+			<h2 class="text-xl font-semibold text-gray-800">Edit Profile</h2>
+			<p class="mx-4 text-sm text-gray-500">Update your account details</p>
+			<!-- Profile Image -->
+			<div class="relative">
+				{#if profileImageUrl}
+					<img src={profileImageUrl} alt="Profile" class="h-28 w-28 rounded-full border-4 border-blue-500 object-cover shadow-md" />
+				{:else}
+					<img src="/panda.png" alt="Default Profile" class="h-28 w-28 rounded-full border-4 border-gray-300 object-cover shadow-md" />
+				{/if}
+				<label class="absolute bottom-1 right-1 cursor-pointer rounded-full bg-blue-500 p-1 shadow-md transition hover:bg-blue-600">
+					<svg class="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+					</svg>
+					<Input type="file" accept="image/*" class="hidden" onchange={handleFileChange} />
+				</label>
+			</div>
+
+			<!-- Upload Button -->
+			<Button type="button" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700" onclick={uploadProfilePicture}>
+				Upload New Picture
+			</Button>
 
 			{#if errorMessage}
 				<p class="text-sm text-red-500">{errorMessage}</p>
 			{/if}
 
-			<div class="grid grid-cols-1 gap-4">
-				<div class="grid gap-2">
-					<Label for="full-name">Full Name</Label>
-					<Input id="full-name" type="text" bind:value={fullName} required />
+			<div class="w-full space-y-4">
+				<div>
+					<Label for="full-name" class="text-gray-600">Full Name</Label>
+					<Input id="full-name" type="text" bind:value={fullName} class="w-full rounded-lg border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-300" required />
 				</div>
-				<div class="grid gap-2">
-					<Label for="email">Email</Label>
-					<Input id="email" type="email" bind:value={email} required />
+				<div>
+					<Label for="email" class="text-gray-600">Email</Label>
+					<Input id="email" type="email" bind:value={email} class="w-full rounded-lg border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-300" required />
 				</div>
 			</div>
 
-			<Button type="button" class="mt-4 w-full" onclick={updateProfile} disabled={isLoading}>
-				{#if isLoading}
-					<span>Saving...</span>
-				{:else}
-					Save Changes
-				{/if}
+			<Button type="button" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition" onclick={updateProfile} disabled={isLoading}>
+				{#if isLoading} Saving... {:else} Save Changes {/if}
 			</Button>
 		</div>
 
-		<!-- Right column for Change Password -->
-		<div class="mt-6 flex-1 space-y-6 sm:ml-8 sm:mt-0">
-			<h2 class="text-center text-xl font-semibold">Change Password</h2>
-			<div class="grid grid-cols-1 gap-4">
-				<div class="grid gap-2">
-					<Label for="current-password">Current Password</Label>
-					<Input id="current-password" type="password" bind:value={currentPassword} required />
+		<!-- Right Column: Change Password -->
+		<div class="mt-6 flex flex-col sm:mt-0 sm:w-1/2">
+			<h2 class="text-xl font-semibold text-gray-800 text-center">Change Password</h2>
+			<div class="mt-4 space-y-4">
+				<div>
+					<Label for="current-password" class="text-gray-600">Current Password</Label>
+					<Input id="current-password" type="password" bind:value={currentPassword} class="w-full rounded-lg border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-300" required />
 				</div>
-				<div class="grid gap-2">
-					<Label for="new-password">New Password</Label>
-					<Input id="new-password" type="password" bind:value={newPassword} required />
+				<div>
+					<Label for="new-password" class="text-gray-600">New Password</Label>
+					<Input id="new-password" type="password" bind:value={newPassword} class="w-full rounded-lg border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-300" required />
 				</div>
-				<div class="grid gap-2">
-					<Label for="confirm-password">Confirm New Password</Label>
-					<Input id="confirm-password" type="password" bind:value={confirmPassword} required />
+				<div>
+					<Label for="confirm-password" class="text-gray-600">Confirm New Password</Label>
+					<Input id="confirm-password" type="password" bind:value={confirmPassword} class="w-full rounded-lg border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-300" required />
 				</div>
 			</div>
 
-			<Button
-				type="button"
-				class="mt-4 w-full"
-				onclick={updatePasswordHandler}
-				disabled={isLoading}
-			>
-				{#if isLoading}
-					<span>Updating...</span>
-				{:else}
-					Update Password
-				{/if}
+			<Button type="button" class="mt-4 w-full bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:bg-red-700 transition" onclick={updatePasswordHandler} disabled={isLoading}>
+				{#if isLoading} Updating... {:else} Update Password {/if}
 			</Button>
 		</div>
 	</div>
-</div>
-
-<!-- Display Profile Image -->
-<div class="profile-image">
-	{#if profileImageUrl}
-		<img src={profileImageUrl} alt="Profile" class="h-24 w-24 rounded-full object-cover" />
-	{:else}
-		<img src="/panda.png" alt="Default Profile" class="h-24 w-24 rounded-full object-cover" />
-	{/if}
-</div>
-
-<!-- Upload Profile Picture -->
-<div class="mt-4">
-	<Input type="file" accept="image/*" onchange={handleFileChange} />
-	<Button type="button" onclick={uploadProfilePicture}>Upload Profile Picture</Button>
 </div>

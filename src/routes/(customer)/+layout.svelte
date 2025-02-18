@@ -56,30 +56,18 @@
 	<CustomerSidebar />
 	<Sidebar.Inset class="bg-primary-foreground">
 		<header
-			class="sticky top-0 flex h-16 shrink-0 items-center gap-2 bg-primary-foreground px-4 transition-all {$hasScrolled
-				? 'border-b border-gray-100 shadow-sm'
-				: ''}"
+			class="sticky top-0 flex h-16 shrink-0 items-center gap-2 bg-primary-foreground px-4 transition-all duration-300 ease-in-out 
+			{$hasScrolled ? 'border-b border-gray-100 shadow-lg' : ''}"
 		>
 			<Sidebar.Trigger class="-ml-1" />
-			<!-- <Breadcrumb.Root>
-				<Breadcrumb.List>
-					<Breadcrumb.Item class="hidden md:block">
-						<Breadcrumb.Link href="/">Medicines</Breadcrumb.Link>
-					</Breadcrumb.Item>
-					<Breadcrumb.Separator class="hidden md:block" />
-					<Breadcrumb.Item>
-						<Breadcrumb.Page>Data Fetching</Breadcrumb.Page>
-					</Breadcrumb.Item>
-				</Breadcrumb.List>
-			</Breadcrumb.Root> -->
 
 			<div class="ml-auto flex items-center gap-6">
 				{#if $user}
-					<Tooltip.Provider delayDuration={0}>
+					<Tooltip.Provider delayDuration={200}>
 						<Tooltip.Root>
 							<Tooltip.Trigger
 								onclick={() => goto('/notification')}
-								class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full hover:text-orange-400"
+								class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full hover:bg-gray-200 hover:text-orange-400 transition-all"
 							>
 								<BellRing size={22} />
 							</Tooltip.Trigger>
@@ -87,27 +75,25 @@
 							<Tooltip.Content
 								align="end"
 								alignOffset={15}
-								class="flex h-40 w-64 flex-col items-center justify-center gap-4 p-0"
+								class="flex w-64 flex-col items-center justify-center gap-4 p-4 bg-white rounded-lg shadow-xl"
 							>
 								<img
 									src="/bell.png"
-									alt="No notification"
+									alt="Notification"
 									class="h-10 w-10 rounded-full object-cover"
 								/>
-								<!-- If there's no notification-->
-								<span class="p-2">No notifications</span>
-								<!-- If there's a notification-->
-								<span class="p-2">You have 1 new notification</span>
-								<Button>Open</Button>
+								<!-- Add dynamic notification content -->
+								<span class="p-2 text-center">You have 1 new notification!</span>
+								<Button class="w-full text-sm">View Notifications</Button>
 							</Tooltip.Content>
 						</Tooltip.Root>
 					</Tooltip.Provider>
 				{/if}
 
-				<Tooltip.Provider delayDuration={0}>
+				<Tooltip.Provider delayDuration={200}>
 					<Tooltip.Root>
 						<Tooltip.Trigger
-							class="mr-4 flex h-10 w-10 items-center justify-center rounded-full hover:bg-transparent"
+							class="mr-4 flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-200 transition-all"
 						>
 							<Avatar.Root class="h-10 w-10">
 								<Avatar.Image
@@ -124,21 +110,21 @@
 								</Avatar.Fallback>
 							</Avatar.Root>
 						</Tooltip.Trigger>
-						<Tooltip.Content align="end" alignOffset={15} class="flex w-40 flex-col p-0">
+						<Tooltip.Content align="end" alignOffset={15} class="flex w-40 flex-col p-4 bg-white rounded-lg shadow-xl">
 							{#if $user}
 								<span class="p-2 pt-4 text-center text-sm font-medium">Hi, {$user.fullName}</span>
-								<Button href="/settings" variant="ghost" class="justify-start">
-									<Settings />Settings
+								<Button href="/settings" variant="ghost" class="justify-start text-sm">
+									<Settings class="mr-2" />Settings
 								</Button>
-								<Button onclick={handleLogout} variant="ghost" class="justify-start">
-									<LogOut />Log out
+								<Button onclick={handleLogout} variant="ghost" class="justify-start text-sm">
+									<LogOut class="mr-2" />Log out
 								</Button>
 							{:else}
-								<Button href="/login" variant="ghost" class="justify-start">
-									<Lock />Sign in
+								<Button href="/login" variant="ghost" class="justify-start text-sm">
+									<Lock class="mr-2" />Sign in
 								</Button>
-								<Button href="/register" variant="ghost" class="justify-start">
-									<User />Create Account
+								<Button href="/register" variant="ghost" class="justify-start text-sm">
+									<User class="mr-2" />Create Account
 								</Button>
 							{/if}
 						</Tooltip.Content>
@@ -146,7 +132,8 @@
 				</Tooltip.Provider>
 			</div>
 		</header>
-		<div class="flex flex-1 flex-col gap-4 p-4">
+
+		<div class="flex flex-1 flex-col gap-4 p-4 overflow-auto">
 			<Toaster />
 			{@render children?.()}
 		</div>

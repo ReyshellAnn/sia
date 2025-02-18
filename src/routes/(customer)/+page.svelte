@@ -10,6 +10,7 @@
 
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Star } from 'lucide-svelte';
 
 	let medicines: any[] = [];
 	let user = page.data.user;
@@ -130,28 +131,29 @@
 
 <div class="flex flex-wrap gap-4">
 	{#each medicines as medicine}
-		<Card.Root class="w-72">
+		<Card.Root class="w-60 bg-white rounded-lg shadow-md overflow-hidden">
 			<Card.Content
-				class="mx-auto flex items-center justify-center p-0 hover:cursor-pointer hover:bg-primary-foreground"
+				class="mx-auto flex items-center justify-center p-2 hover:cursor-pointer hover:bg-primary-foreground transition duration-200"
 				onclick={() => goToMedicine(medicine.id)}
 			>
-				<img src={medicine.image} alt="Medicine" class="h-48 w-full rounded-md object-cover" />
+				<img src={medicine.image} alt="Medicine" class="h-32 w-full object-cover rounded-t-lg group-hover:opacity-80 transition duration-200 p-2"/>
 			</Card.Content>
-			<Card.Footer class="flex flex-col items-start space-y-3 p-2">
-				<span class="text-lg font-normal">{medicine.name}</span>
-				<span class="text-lg font-medium">₱{medicine.price}</span>
-
+			
+			<Card.Footer class="p-3 flex flex-col items-start space-y-2">
+				<span class="text-sm font-normal">{medicine.name}</span>
 				<div class="flex items-center gap-1">
 					{#each Array(5) as _, i}
-						<span class={i < Math.round(medicine.averageRating) ? 'text-yellow-500' : 'text-gray-300'}>★</span>
+							<Star
+								size={16}
+								class={i < Math.round(medicine.averageRating) ? 'text-yellow-400' : 'text-gray-300'}
+							/>
 					{/each}
-					<span class="text-sm text-gray-500">({medicine.totalReviews})</span>
+					<span class="text-xs text-gray-500">({medicine.totalReviews})</span>
 				</div>
-				
-				
+				<span class="text-sm font-semibold text-gray-600">₱{medicine.price}</span>
 
 				<Button
-					class="w-full bg-orange-400 hover:bg-orange-500"
+					class="w-full bg-green-600 hover:bg-green-700"
 					onclick={() => addToCart(medicine)}
 					disabled={loading[medicine.id]}
 				>

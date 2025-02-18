@@ -209,9 +209,12 @@
 	};
 </script>
 
-<div class="flex flex-wrap gap-12">
+<div class="flex flex-wrap gap-6">
 	<div class="flex flex-[2] flex-col">
-		<Card.Root>
+		<Card.Root class="bg-white rounded-lg shadow-md p-4 w-full">
+			<span class="p-4 text-center font-medium text-lg text-gray-700">
+				🛒 Your Cart
+			</span>
 			<Card.Content>
 				{#if cartItems.length === 0}
 					<p class="text-center text-lg text-gray-500">
@@ -219,19 +222,19 @@
 					</p>
 				{:else}
 					{#each cartItems as item}
-						<div class="flex flex-row justify-between">
-							<div class="flex flex-row space-x-4">
-								<img src={item.imageUrl} alt="Medicine" class="w-20" />
+						<div class="flex flex-row justify-between items-center py-4 border-b border-gray-300">
+							<div class="flex flex-row items-center space-x-4 w-2/5">
+								<img src={item.imageUrl} alt="Medicine" class="w-20 h-20 object-cover rounded-md" />
 								<span>{item.name}</span>
 							</div>
 
-							<div class="flex flex-col">
+							<div class="flex flex-col items-center w-1/4">
 								<span class="text-sm text-gray-600">Price</span>
-								<span>₱{item.price}</span>
+								<span class="text-sm font-semibold text-gray-600">₱{item.price}</span>
 							</div>
 
-							<div class="flex flex-col">
-								<span class="text-sm text-gray-600">Qty</span>
+							<div class="flex flex-col items-center w-1/4">
+								<span class="text-sm text-gray-600">Quantity</span>
 								<Input
 									type="number"
 									value={item.quantity}
@@ -242,11 +245,12 @@
 											updateQuantity(item.id, +target.value); // Safely access the value
 										}
 									}}
+									class="border rounded-sm p-2 w-24 text-center"
 								/>
 							</div>
 
-							<div class="flex flex-col">
-								<span class="text-sm text-gray-600">Action</span>
+							<div class="flex flex-col items-center">
+								<span class="text-sm text-gray-600"></span>
 								<Button
 									variant="ghost"
 									class="rounded-full text-red-600 hover:text-red-900"
@@ -269,27 +273,27 @@
 		</Card.Root>
 	</div>
 
-	<Card.Root class="flex-1">
-		<Card.Content class="flex flex-col space-y-3">
-			<span class="text-xl font-medium">Cart Total</span>
-			<Separator />
+	<Card.Root class="bg-white rounded-lg shadow-md p-4 flex-1">
+		<Card.Content class="flex flex-col space-y-4">
+			<span class="text-xl font-medium">🛒 Cart Total</span>
+			<Separator class="border-t border-gray-300" />
 
-			<div class="flex justify-between">
-				<span class="text-lg font-medium">Total</span>
-				<span class="text-lg font-medium text-orange-500">
+			<div class="flex justify-between items-center">
+				<span class="text-lg font-medium">Total:</span>
+				<span class="text-lg font-semibold text-green-700">
 					₱{cartItems.reduce((total, item) => total + item.price * item.quantity, 0)}
 				</span>
 			</div>
-			<span class="font-medium">Select Pickup Option:</span>
-			<select bind:value={pickupOption} class="rounded border p-2">
+			<span class="font-medium text-gray-700">Select Pickup Option:</span>
+			<select bind:value={pickupOption} class="rounded border p-2 p-2 w-full">
 				<option value="now">Pickup Now</option>
 				<option value="later">Schedule Pickup</option>
 			</select>
 
 			{#if pickupOption === 'later'}
 				<div>
-					<span class="font-medium">Select Pickup Time:</span>
-					<select bind:value={scheduledPickupTime} class="rounded border p-2">
+					<span class="font-medium text-gray-700" >Select Pickup Time:</span>
+					<select bind:value={scheduledPickupTime} class="rounded border p-2 w-full">
 						{#each timeSlots as time}
 							<option value={time.value} disabled={disabledTimes.includes(time.value)}>
 								{time.label}
@@ -304,21 +308,23 @@
 				disabled={(pickupOption === 'later' && !scheduledPickupTime) ||
 					cartItems.length === 0 ||
 					loading.proceed}
-			>
+							class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-400"
+							>
 				{#if loading.proceed}
 					Proceeding...
 				{:else}
 					Proceed to Pickup
 				{/if}
 			</Button>
-			<Button variant="secondary" onclick={() => goto('/')}>
+			<Button variant="secondary" onclick={() => goto('/')} class="w-full py-2 px-4 bg-gray-200 text-black rounded-md hover:bg-gray-300">
 				<ArrowLeft />Return to Shopping
 			</Button>
 			<Button
 				variant="secondary"
 				disabled={cartItems.length === 0 || loading.clearCart}
 				onclick={clearCart}
-			>
+				class="w-full py-2 px-4 bg-gray-200 text-black rounded-md hover:bg-gray-300 disabled:bg-gray-400"
+				>
 				{#if loading.clearCart}
 					Clearing...
 				{:else}
