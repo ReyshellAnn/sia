@@ -23,39 +23,46 @@
 	});
 
 	onMount(async () => {
-	try {
-		const querySnapshot = await getDocs(collection(db, 'medicines'));
-		medicines = await Promise.all(
-			querySnapshot.docs.map(async (docSnap) => {
-				const medicineData = {
-					id: docSnap.id,
-					name: docSnap.data().name,
-					price: docSnap.data().price,
-					image: docSnap.data().imageUrl || '/placeholder.png'
-				};
+    try {
+        const querySnapshot = await getDocs(collection(db, 'medicines'));
+        medicines = await Promise.all(
+            querySnapshot.docs
+                .filter((docSnap) => docSnap.data().visibleToCustomers) // Only include visible medicines
+                .map(async (docSnap) => {
+                    const medicineData = {
+                        id: docSnap.id,
+                        name: docSnap.data().name,
+                        price: docSnap.data().price,
+                        image: docSnap.data().imageUrl || '/placeholder.png',
+                        brand: docSnap.data().brand,
+                        generic: docSnap.data().generic,
+                        form: docSnap.data().form,
+                        dosage: docSnap.data().dosage,
+                    };
 
-				// Fetch reviews for each medicine
-				const reviewsSnapshot = await getDocs(collection(db, 'medicines', docSnap.id, 'reviews'));
-				const reviews = reviewsSnapshot.docs.map((reviewDoc) => reviewDoc.data());
+                    // Fetch reviews for each medicine
+                    const reviewsSnapshot = await getDocs(collection(db, 'medicines', docSnap.id, 'reviews'));
+                    const reviews = reviewsSnapshot.docs.map((reviewDoc) => reviewDoc.data());
 
-				// Calculate average rating and total reviews
-				const totalReviews = reviews.length;
-				const averageRating =
-					totalReviews > 0
-						? parseFloat((reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews).toFixed(1))
-						: 0.0;
+                    // Calculate average rating and total reviews
+                    const totalReviews = reviews.length;
+                    const averageRating =
+                        totalReviews > 0
+                            ? parseFloat((reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews).toFixed(1))
+                            : 0.0;
 
-				return {
-					...medicineData,
-					averageRating,
-					totalReviews
-				};
-			})
-		);
-	} catch (error) {
-		console.error('Error fetching medicines:', error);
-	}
+                    return {
+                        ...medicineData,
+                        averageRating,
+                        totalReviews
+                    };
+                })
+        );
+    } catch (error) {
+        console.error('Error fetching medicines:', error);
+    }
 });
+
 
 
 	const goToMedicine = (id: string) => {
@@ -140,7 +147,7 @@
 			</Card.Content>
 			
 			<Card.Footer class="p-3 flex flex-col items-start space-y-2">
-				<span class="text-sm font-normal">{medicine.name}</span>
+				<span class="text-sm font-normal"><span class="font-semibold uppercase ">{medicine.brand}</span> {medicine.generic} {medicine.dosage} {medicine.form}</span>
 				<div class="flex items-center gap-1">
 					{#each Array(5) as _, i}
 							<Star

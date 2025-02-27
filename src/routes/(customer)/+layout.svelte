@@ -110,7 +110,7 @@
 								</Avatar.Fallback>
 							</Avatar.Root>
 						</Tooltip.Trigger>
-						<Tooltip.Content align="end" alignOffset={15} class="flex w-40 flex-col p-4 bg-white rounded-lg shadow-xl">
+						<Tooltip.Content align="end" alignOffset={15} class="flex w-sm flex-col p-4 bg-white rounded-lg shadow-xl">
 							{#if $user}
 								<span class="p-2 pt-4 text-center text-sm font-medium">Hi, {$user.fullName}</span>
 								<Button href="/settings" variant="ghost" class="justify-start text-sm">

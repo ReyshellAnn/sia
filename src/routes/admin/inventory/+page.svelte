@@ -3,12 +3,14 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 
-	import { collection, doc, getDoc, getDocs, deleteDoc } from 'firebase/firestore'; // Import Firestore functions
+	import { collection, doc, getDoc, getDocs, deleteDoc, updateDoc } from 'firebase/firestore'; // Import Firestore functions
 	import { auth, db } from '$lib/firebase'; // Firebase Auth and Firestore references
 	import { onAuthStateChanged } from 'firebase/auth'; // Firebase Auth state
 
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import { Switch } from '$lib/components/ui/switch/index.js';
 
 	import * as Pagination from '$lib/components/ui/pagination/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
@@ -28,6 +30,7 @@
 
 	// Define a type for the medicine data
 	interface Medicine {
+		visibleToCustomers: boolean;
 		id: string;
 		name: string;
 		category: string;
@@ -35,6 +38,13 @@
 		price: number;
 		stock: number;
 		imageUrl?: string;
+		brand: string;
+		generic: string;
+		form: string;
+		dosage: string;
+		prescriptionRequired: boolean;
+		productCode: string;
+		expirationDate: string;
 	}
 
 	// Declare reactive variables
@@ -133,6 +143,20 @@
 		}
 	};
 
+	const toggleVisibility = async (medicine: Medicine, checked: boolean) => {
+    try {
+        const medicineRef = doc(db, 'medicines', medicine.id);
+        await updateDoc(medicineRef, { visibleToCustomers: checked });
+
+        toast.success(`Visibility updated to ${checked ? "visible" : "hidden"}`);
+    } catch (error) {
+        console.error('Error updating visibility:', error);
+        toast.error("Failed to update visibility.");
+    }
+};
+
+
+
 	// Open dialog and set selected row
 	const openDeleteDialog = (medicine: Medicine) => {
 		selectedRow = medicine;
@@ -142,65 +166,111 @@
 
 <!-- Render content only if the user is authorized -->
 {#if isAuthorized}
-	<header class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 shadow-md rounded-lg mb-4">
+	<header
+		class="mb-4 flex flex-col items-center justify-between rounded-lg bg-white p-4 shadow-md sm:flex-row"
+	>
 		<span class="text-2xl font-semibold text-gray-700">📋 Inventory List</span>
 
 		<div class="flex flex-row space-x-2">
-			<Input type="search" placeholder="Search Medicine" class="w-[200px] sm:w-[250px] border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-			<Button href="/admin/inventory/add" class="flex items-center gap-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-				<Plus class="w-4 h-4" />
+			<Input
+				type="search"
+				placeholder="Search Medicine"
+				class="w-[200px] rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-[250px]"
+			/>
+			<Button
+				href="/admin/inventory/add"
+				class="flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+			>
+				<Plus class="h-4 w-4" />
 				Add Medicine
 			</Button>
 		</div>
 	</header>
 
-	<div class="overflow-x-auto bg-white shadow-md rounded-lg">
-		<Table.Root class="w-full text-left border-collapse">
+	<div class="overflow-x-auto rounded-lg bg-white shadow-md">
+		<Table.Root class="w-full border-collapse text-left">
 			<Table.Header class="bg-gray-100 text-gray-700">
 				<Table.Row>
-					<Table.Head class="py-3 px-4">Name</Table.Head>
-					<Table.Head class="py-3 px-4">Category</Table.Head>
-					<Table.Head class="py-3 px-4">Description</Table.Head>
-					<Table.Head class="py-3 px-4">Price</Table.Head>
-					<Table.Head class="py-3 px-4">Stock</Table.Head>
-					<Table.Head class="py-3 px-4 text-center">Actions</Table.Head>
+					<Table.Head class="px-6 py-3 text-center">Brand</Table.Head>
+					<Table.Head class="px-4 py-3">Generic Name</Table.Head>
+					<Table.Head class="px-4 py-3">Dosage & Form</Table.Head>
+					<Table.Head class="px-4 py-3">Expiration Date</Table.Head>
+					<Table.Head class="px-4 py-3">Category</Table.Head>
+					<Table.Head class="px-4 py-3">Prescription</Table.Head>
+					<Table.Head class="px-4 py-3">Price</Table.Head>
+					<Table.Head class="px-4 py-3">Stock</Table.Head>
+					<Table.Head class="px-4 py-3 text-center">Actions</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
 				{#each medicines as medicine (medicine.id)}
-					<Table.Row class="border-b hover:bg-gray-50 transition">
-						<Table.Cell class="py-3 px-4 flex items-center gap-3">
+					<Table.Row class="border-b transition hover:bg-gray-50">
+						<Table.Cell class="flex items-center gap-3 px-10 py-3">
 							{#if medicine.imageUrl}
-								<img src={medicine.imageUrl} alt={medicine.name} class="h-10 w-10 rounded-full border border-gray-300" />
+								<img
+									src={medicine.imageUrl}
+									alt={medicine.name}
+									class="h-10 w-10 rounded-full border border-gray-300"
+								/>
 							{:else}
 								<span class="text-gray-400">No Image</span>
 							{/if}
-							<span class="font-medium">{medicine.name}</span>
+							<div>
+								<span class="font-medium">{medicine.brand}</span>
+								<span class="text-xs font-normal text-gray-700">#{medicine.productCode}</span>
+							</div>
 						</Table.Cell>
-						<Table.Cell class="py-3 px-4">{medicine.category}</Table.Cell>
-						<Table.Cell class="py-3 px-4 whitespace-normal">{medicine.description}</Table.Cell>
-						<Table.Cell class="py-3 px-4 font-semibold text-green-600">₱{medicine.price.toFixed(2)}</Table.Cell>
-						<Table.Cell class="py-3 px-4">{medicine.stock}</Table.Cell>
-						<Table.Cell class="py-3 px-4 flex justify-center gap-2">
+						<Table.Cell class="px-4 py-3">{medicine.generic}</Table.Cell>
+						<Table.Cell class="px-4 py-3">{medicine.dosage} {medicine.form}</Table.Cell>
+						<Table.Cell class="px-4 py-3">{medicine.expirationDate}</Table.Cell>
+						<Table.Cell class="px-4 py-3">{medicine.category}</Table.Cell>
+						<Table.Cell class="px-4 py-3">
+							{medicine.prescriptionRequired ? 'Yes' : 'No'}
+						</Table.Cell>
+						<Table.Cell class="px-4 py-3 font-semibold text-green-600"
+							>₱{medicine.price.toFixed(2)}</Table.Cell
+						>
+						<Table.Cell class="px-4 py-3">{medicine.stock}</Table.Cell>
+						<Table.Cell class="flex justify-center gap-2 px-4 py-3">
 							<AlertDialog.Root bind:open={isDeleteDialogOpen}>
-								<AlertDialog.Trigger class="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition" onclick={() => openDeleteDialog(medicine)}>
-									<Trash2 class="w-4 h-4" />
+								<AlertDialog.Trigger
+									class="rounded-lg bg-red-100 p-2 text-red-600 transition hover:bg-red-200"
+									onclick={() => openDeleteDialog(medicine)}
+								>
+									<Trash2 class="h-4 w-4" />
 								</AlertDialog.Trigger>
 
-								<AlertDialog.Content class="max-w-sm bg-white shadow-lg rounded-lg p-6">
+								<AlertDialog.Content class="max-w-sm rounded-lg bg-white p-6 shadow-lg">
 									<AlertDialog.Header>
-										<AlertDialog.Title class="text-lg font-semibold text-gray-800">Are you sure?</AlertDialog.Title>
+										<AlertDialog.Title class="text-lg font-semibold text-gray-800"
+											>Are you sure?</AlertDialog.Title
+										>
 										<AlertDialog.Description class="text-sm text-gray-600">
 											This action cannot be undone.
 										</AlertDialog.Description>
 									</AlertDialog.Header>
 									<AlertDialog.Footer class="flex justify-end space-x-2">
-										<AlertDialog.Cancel class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition" onclick={() => { isDeleteDialogOpen = false; }}>
+										<AlertDialog.Cancel
+											class="rounded-lg bg-gray-100 px-4 py-2 text-gray-700 transition hover:bg-gray-200"
+											onclick={() => {
+												isDeleteDialogOpen = false;
+											}}
+										>
 											Cancel
 										</AlertDialog.Cancel>
-										<AlertDialog.Action class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition" onclick={() => { if (selectedRow) { deleteRow(selectedRow); } }} disabled={isLoading}>
+										<AlertDialog.Action
+											class="rounded-lg bg-red-600 px-4 py-2 text-white transition hover:bg-red-700"
+											onclick={() => {
+												if (selectedRow) {
+													deleteRow(selectedRow);
+												}
+											}}
+											disabled={isLoading}
+										>
 											{#if isLoading}
-												<span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+												<span
+													class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+												></span>
 											{:else}
 												Delete
 											{/if}
@@ -208,9 +278,21 @@
 									</AlertDialog.Footer>
 								</AlertDialog.Content>
 							</AlertDialog.Root>
-							<Button href={`/admin/inventory/edit?id=${medicine.id}`} variant="ghost" class="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
-								<Pencil class="w-4 h-4 text-gray-600" />
+							<Button
+								href={`/admin/inventory/edit?id=${medicine.id}`}
+								variant="ghost"
+								class="rounded-lg bg-gray-100 p-2 transition hover:bg-gray-200"
+							>
+								<Pencil class="h-4 w-4 text-gray-600" />
 							</Button>
+							<div class="flex items-center space-x-2">
+								<Switch
+									id="visible-mode-{medicine.id}"
+									bind:checked={medicine.visibleToCustomers}
+									onCheckedChange={(checked) => toggleVisibility(medicine, checked)}
+								/>
+								<Label for="visible-mode-{medicine.id}">Visibility</Label>
+							</div>
 						</Table.Cell>
 					</Table.Row>
 				{/each}
