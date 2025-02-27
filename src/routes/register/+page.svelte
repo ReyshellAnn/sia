@@ -1,68 +1,74 @@
 <script lang="ts">
 	import '../../app.css';
-
 	import { Toaster, toast } from 'svelte-sonner';
-
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-
-	import { auth, db } from '$lib/firebase'; // Firebase config file
-	import { createUserWithEmailAndPassword } from 'firebase/auth';
-	import { doc, setDoc } from 'firebase/firestore';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 
 	let fullName = '';
 	let email = '';
 	let password = '';
 	let confirmPassword = '';
 	let errorMessage = '';
-	let isLoading = false; // Loading state flag
+	let isLoading = false;
+	let siteKey = "6LdjKuQqAAAAAK-iJx_5AxlIEHbEEQpiwGTqigfG"; // Replace with your reCAPTCHA site key
+	let captchaToken = '';
+
+	// Load reCAPTCHA dynamically & define global callback
+	onMount(() => {
+		// Global function for reCAPTCHA callback
+		(window as any).onCaptchaSuccess = (token: string) => {
+			captchaToken = token;
+		};
+
+		// Load reCAPTCHA script
+		const script = document.createElement('script');
+		script.src = "https://www.google.com/recaptcha/api.js";
+		script.async = true;
+		script.defer = true;
+		document.body.appendChild(script);
+	});
 
 	async function register() {
-		// Set loading state to true
 		isLoading = true;
+		errorMessage = '';
 
-		// Validation: Ensure all fields are filled
 		if (!fullName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
-			errorMessage = 'All fields are required!';
-			isLoading = false; // Reset loading state
+			errorMessage = "All fields are required!";
+			isLoading = false;
 			return;
 		}
 
-		// Validation: Ensure passwords match
 		if (password !== confirmPassword) {
-			errorMessage = 'Passwords do not match!';
-			isLoading = false; // Reset loading state
+			errorMessage = "Passwords do not match!";
+			isLoading = false;
+			return;
+		}
+
+		if (!captchaToken) {
+			errorMessage = "Please complete the CAPTCHA verification!";
+			isLoading = false;
 			return;
 		}
 
 		try {
-			// Create user with email and password
-			const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-			const user = userCredential.user;
-
-			// Set user document in Firestore with full name
-			await setDoc(doc(db, 'users', user.uid), {
-				fullName,
-				email: user.email,
-				role: 'customer',
-				createdAt: new Date().toISOString()
+			const response = await fetch('/register', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ fullName, email, password, captchaToken })
 			});
 
-			// Show success toast
-			toast.success('Account created successfully!');
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.error || 'Registration failed.');
 
-			// Redirect to login page after successful registration
-			window.location.href = '/login';
+			toast.success("Account created successfully!");
+			goto('/login');
 		} catch (error) {
-			if (error instanceof Error) {
-				errorMessage = error.message;
-			} else {
-				errorMessage = 'An unexpected error occurred.';
-			}
+			toast.error(errorMessage);
 		} finally {
-			// Reset loading state
 			isLoading = false;
 		}
 	}
@@ -70,7 +76,6 @@
 
 <div class="flex h-screen w-full items-center justify-center bg-blue-200 px-4">
 	<Toaster />
-	<!-- Toast component for notifications -->
 	<Card.Root class="mx-auto max-w-sm">
 		<Card.Header>
 			<Card.Title class="text-2xl">Register</Card.Title>
@@ -97,6 +102,8 @@
 					<Label for="confirm-password">Confirm Password</Label>
 					<Input id="confirm-password" type="password" bind:value={confirmPassword} required />
 				</div>
+				<!-- Google reCAPTCHA with global callback reference -->
+				<div class="g-recaptcha" data-sitekey={siteKey} data-callback="onCaptchaSuccess"></div>
 				<Button type="submit" class="w-full" onclick={register} disabled={isLoading}>
 					{#if isLoading}
 						<span>Loading...</span>

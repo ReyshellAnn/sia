@@ -22,6 +22,9 @@
 	let profileImageUrl = ''; // For storing profile picture URL
 	let selectedFile: File | null = null; // For handling selected file
 
+	let isUpdatingProfile = false; 
+	let isUpdatingPassword = false; 
+
 	onMount(() => {
 		user.subscribe((currentUser) => {
 			if (currentUser) {
@@ -33,55 +36,55 @@
 	});
 
 	async function updateProfile() {
-		isLoading = true;
-		try {
-			const currentUser = auth.currentUser;
-			if (!currentUser) {
-				errorMessage = 'User not authenticated.';
-				return;
-			}
-
-			const userDocRef = doc(db, 'users', currentUser.uid);
-			await updateDoc(userDocRef, {
-				fullName,
-				email,
-				profileImageUrl // Update the profile picture URL as well
-			});
-
-			toast.success('Profile updated successfully!');
-		} catch (error) {
-			console.error('Error updating profile:', error);
-			errorMessage = 'Failed to update profile.';
-		} finally {
-			isLoading = false;
+	isUpdatingProfile = true;
+	try {
+		const currentUser = auth.currentUser;
+		if (!currentUser) {
+			errorMessage = 'User not authenticated.';
+			return;
 		}
+
+		const userDocRef = doc(db, 'users', currentUser.uid);
+		await updateDoc(userDocRef, {
+			fullName,
+			email,
+			profileImageUrl
+		});
+
+		toast.success('Profile updated successfully!');
+	} catch (error) {
+		console.error('Error updating profile:', error);
+		errorMessage = 'Failed to update profile.';
+	} finally {
+		isUpdatingProfile = false;
 	}
+}
 
 	async function updatePasswordHandler() {
-		isLoading = true;
-		try {
-			const currentUser = auth.currentUser;
-			if (!currentUser) {
-				errorMessage = 'User not authenticated.';
-				return;
-			}
-
-			if (newPassword !== confirmPassword) {
-				errorMessage = 'Passwords do not match!';
-				return;
-			}
-
-			const credential = EmailAuthProvider.credential(currentUser.email!, currentPassword);
-			await reauthenticateWithCredential(currentUser, credential);
-			await updatePassword(currentUser, newPassword);
-			toast.success('Password updated successfully!');
-		} catch (error) {
-			console.error('Error updating password:', error);
-			errorMessage = 'Failed to update password. Ensure current password is correct.';
-		} finally {
-			isLoading = false;
+	isUpdatingPassword = true;
+	try {
+		const currentUser = auth.currentUser;
+		if (!currentUser) {
+			errorMessage = 'User not authenticated.';
+			return;
 		}
+
+		if (newPassword !== confirmPassword) {
+			errorMessage = 'Passwords do not match!';
+			return;
+		}
+
+		const credential = EmailAuthProvider.credential(currentUser.email!, currentPassword);
+		await reauthenticateWithCredential(currentUser, credential);
+		await updatePassword(currentUser, newPassword);
+		toast.success('Password updated successfully!');
+	} catch (error) {
+		console.error('Error updating password:', error);
+		errorMessage = 'Failed to update password. Ensure current password is correct.';
+	} finally {
+		isUpdatingPassword = false;
 	}
+}
 
 	// Handle file selection for profile picture upload
 	function handleFileChange(event: Event) {
@@ -184,8 +187,9 @@
 				</div>
 			</div>
 
-			<Button type="button" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition" onclick={updateProfile} disabled={isLoading}>
-				{#if isLoading} Saving... {:else} Save Changes {/if}
+			<Button type="button" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition"
+				onclick={updateProfile} disabled={isUpdatingProfile}>
+				{#if isUpdatingProfile} Saving... {:else} Save Changes {/if}
 			</Button>
 		</div>
 
@@ -207,8 +211,9 @@
 				</div>
 			</div>
 
-			<Button type="button" class="mt-4 w-full bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:bg-red-700 transition" onclick={updatePasswordHandler} disabled={isLoading}>
-				{#if isLoading} Updating... {:else} Update Password {/if}
+			<Button type="button" class="mt-4 w-full bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:bg-red-700 transition"
+				onclick={updatePasswordHandler} disabled={isUpdatingPassword}>
+				{#if isUpdatingPassword} Updating... {:else} Update Password {/if}
 			</Button>
 		</div>
 	</div>

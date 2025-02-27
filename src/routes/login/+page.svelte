@@ -6,7 +6,8 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 
-	import { auth } from '$lib/firebase'; // Firebase config file
+	import { doc, getDoc } from "firebase/firestore";
+	import { auth, db } from '$lib/firebase'; // Firebase config file
 	import { signInWithEmailAndPassword } from 'firebase/auth';
 	
 	import { goto } from '$app/navigation';
@@ -20,28 +21,43 @@
 	let showForgotPassword = writable(false);
 
 	async function login(event: Event) {
-		event.preventDefault();
-		isLoading = true; // Set loading state to true
+	event.preventDefault();
+	isLoading = true;
 
-		try {
-			// Sign in with Firebase Auth
-			await signInWithEmailAndPassword(auth, email, password);
+	try {
+		// Sign in with Firebase Auth
+		const userCredential = await signInWithEmailAndPassword(auth, email, password);
+		const user = userCredential.user;
 
-			// Show success toast
-			toast.success('Login successful!');
+		// Fetch user role from Firestore
+		const userDoc = await getDoc(doc(db, "users", user.uid));
 
-			// Redirect to the dashboard or home page after successful login
-			goto('/');
-		} catch (error) {
-			if (error instanceof Error) {
-				errorMessage = error.message; // Display the error message
-			} else {
-				errorMessage = 'An unexpected error occurred.';
-			}
-		} finally {
-			isLoading = false; // Reset loading state
+		if (!userDoc.exists()) {
+			errorMessage = "User not found!";
+			toast.error(errorMessage);
+			return;
 		}
+
+		const userData = userDoc.data();
+		const role = userData.role; // Get role from Firestore
+
+		if (role !== "customer") {
+			errorMessage = "Access denied. Only customers can log in.";
+			toast.error(errorMessage);
+			return;
+		}
+
+		// Success
+		toast.success("Login successful!");
+		goto("/");
+
+	} catch (error) {
+		errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+		toast.error(errorMessage);
+	} finally {
+		isLoading = false;
 	}
+}
 
 	async function sendResetEmail(event: Event) {
 		event.preventDefault();

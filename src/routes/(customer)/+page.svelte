@@ -13,8 +13,14 @@
 	import { Star } from 'lucide-svelte';
 
 	let medicines: any[] = [];
+	let filteredMedicines: any[] = [];
 	let user = page.data.user;
 	let loading: Record<string, boolean> = {};
+
+	let searchQuery = "";
+	let selectedCategory = "";
+
+	let categories: string[] = [];
 
 	onMount(() => {
 		onAuthStateChanged(auth, (currentUser) => {
@@ -23,47 +29,61 @@
 	});
 
 	onMount(async () => {
-    try {
-        const querySnapshot = await getDocs(collection(db, 'medicines'));
-        medicines = await Promise.all(
-            querySnapshot.docs
-                .filter((docSnap) => docSnap.data().visibleToCustomers) // Only include visible medicines
-                .map(async (docSnap) => {
-                    const medicineData = {
-                        id: docSnap.id,
-                        name: docSnap.data().name,
-                        price: docSnap.data().price,
-                        image: docSnap.data().imageUrl || '/placeholder.png',
-                        brand: docSnap.data().brand,
-                        generic: docSnap.data().generic,
-                        form: docSnap.data().form,
-                        dosage: docSnap.data().dosage,
-                    };
+		try {
+			const querySnapshot = await getDocs(collection(db, 'medicines'));
+			medicines = await Promise.all(
+				querySnapshot.docs
+					.filter((docSnap) => docSnap.data().visibleToCustomers) // Only include visible medicines
+					.map(async (docSnap) => {
+						const medicineData = {
+							id: docSnap.id,
+							name: docSnap.data().name,
+							price: docSnap.data().price,
+							image: docSnap.data().imageUrl || '/placeholder.png',
+							brand: docSnap.data().brand,
+							generic: docSnap.data().generic,
+							form: docSnap.data().form,
+							dosage: docSnap.data().dosage,
+							category: docSnap.data().category || "Uncategorized", // Ensure category exists
+						};
 
-                    // Fetch reviews for each medicine
-                    const reviewsSnapshot = await getDocs(collection(db, 'medicines', docSnap.id, 'reviews'));
-                    const reviews = reviewsSnapshot.docs.map((reviewDoc) => reviewDoc.data());
+						// Fetch reviews for each medicine
+						const reviewsSnapshot = await getDocs(collection(db, 'medicines', docSnap.id, 'reviews'));
+						const reviews = reviewsSnapshot.docs.map((reviewDoc) => reviewDoc.data());
 
-                    // Calculate average rating and total reviews
-                    const totalReviews = reviews.length;
-                    const averageRating =
-                        totalReviews > 0
-                            ? parseFloat((reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews).toFixed(1))
-                            : 0.0;
+						// Calculate average rating and total reviews
+						const totalReviews = reviews.length;
+						const averageRating =
+							totalReviews > 0
+								? parseFloat((reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews).toFixed(1))
+								: 0.0;
 
-                    return {
-                        ...medicineData,
-                        averageRating,
-                        totalReviews
-                    };
-                })
-        );
-    } catch (error) {
-        console.error('Error fetching medicines:', error);
-    }
-});
+						return {
+							...medicineData,
+							averageRating,
+							totalReviews
+						};
+					})
+			);
 
+			// Extract unique categories
+			categories = [...new Set(medicines.map(med => med.category))];
 
+			// Initialize filtered list
+			filterMedicines();
+		} catch (error) {
+			console.error('Error fetching medicines:', error);
+		}
+	});
+
+	// Function to filter medicines based on search & category
+	const filterMedicines = () => {
+		filteredMedicines = medicines.filter(med => {
+			const matchesSearch = med.name.toLowerCase().includes(searchQuery.toLowerCase());
+			const matchesCategory = selectedCategory ? med.category === selectedCategory : true;
+			return matchesSearch && matchesCategory;
+		});
+	};
 
 	const goToMedicine = (id: string) => {
 		goto(`/medicine/${id}`);
@@ -136,8 +156,34 @@
 	};
 </script>
 
+<!-- Search and Filter UI -->
+<div class="flex gap-4 mb-4">
+	<input
+		type="text"
+		placeholder="Search medicine..."
+		bind:value={searchQuery}
+		on:input={filterMedicines}
+		class="border p-2 rounded-md w-full"
+	/>
+
+	<select bind:value={selectedCategory} on:change={filterMedicines} class="border p-2 rounded-md">
+		<option value="">All Categories</option>
+		<option value="Allergy & Antihistamines">Allergy & Antihistamines</option>
+		<option value="Antibiotics">Antibiotics</option>
+		<option value="Baby & Infant Care">Baby & Infant Care</option>
+		<option value="Cough, Cold & Flu">Cough, Cold & Flu</option>
+		<option value="Diabetes Care">Diabetes Care</option>
+		<option value="Digestive Health">Digestive Health</option>
+		<option value="First Aid & Wound Care">First Aid & Wound Care</option>
+		<option value="Heart Health">Heart Health</option>
+		<option value="Women's Health">Women's Health</option>
+	</select>
+	
+</div>
+
+<!-- Medicine Cards -->
 <div class="flex flex-wrap gap-4">
-	{#each medicines as medicine}
+	{#each filteredMedicines as medicine}
 		<Card.Root class="w-60 bg-white rounded-lg shadow-md overflow-hidden">
 			<Card.Content
 				class="mx-auto flex items-center justify-center p-2 hover:cursor-pointer hover:bg-primary-foreground transition duration-200"

@@ -44,6 +44,7 @@
 	let averageRating: number = 0.0;
 
 	let totalReviews = reviews.length; // Make sure this is updated after fetching reviews
+	let loadingState = false;
 
 	const fetchReviews = async () => {
 		try {
@@ -211,67 +212,72 @@
 	};
 
 	const submitReview = async () => {
-		if (!user) {
-			toast.error('You must be logged in to submit a review.');
-			return;
-		}
+    if (!user) {
+        toast.error('You must be logged in to submit a review.');
+        return;
+    }
 
-		if (!selectedRating || !reviewText.trim()) {
-			toast.error('Please provide a rating and a review.');
-			return;
-		}
+    if (!selectedRating || !reviewText.trim()) {
+        toast.error('Please provide a rating and a review.');
+        return;
+    }
 
-		try {
-			// Fetch user's fullName from 'users' collection
-			const userDocRef = doc(db, 'users', user.uid);
-			const userDocSnap = await getDoc(userDocRef);
+    loadingState = true; // Set loading state
 
-			if (!userDocSnap.exists()) {
-				toast.error('User information not found.');
-				return;
-			}
+    try {
+        // Fetch user's fullName from 'users' collection
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
 
-			const { fullName } = userDocSnap.data();
+        if (!userDocSnap.exists()) {
+            toast.error('User information not found.');
+            return;
+        }
 
-			const reviewRef = collection(db, 'medicines', medicine.id, 'reviews');
-			const existingReviewSnapshot = await getDocs(reviewRef);
-			const userReviewDoc = existingReviewSnapshot.docs.find(
-				(doc) => doc.data().userId === user.uid
-			);
+        const { fullName } = userDocSnap.data();
 
-			const reviewData = {
-				userId: user.uid,
-				fullName: postAnonymously ? 'Anonymous' : fullName, // Use fullName if not anonymous
-				rating: selectedRating,
-				review: reviewText,
-				createdAt: new Date().toISOString(),
-				anonymous: postAnonymously
-			};
+        const reviewRef = collection(db, 'medicines', medicine.id, 'reviews');
+        const existingReviewSnapshot = await getDocs(reviewRef);
+        const userReviewDoc = existingReviewSnapshot.docs.find(
+            (doc) => doc.data().userId === user.uid
+        );
 
-			if (userReviewDoc) {
-				await updateDoc(doc(db, 'medicines', medicine.id, 'reviews', userReviewDoc.id), {
-					...reviewData,
-					updatedAt: new Date().toISOString()
-				});
-				toast.success('Review updated successfully!');
-			} else {
-				await addDoc(reviewRef, reviewData);
-				toast.success('Review submitted successfully!');
-			}
+        const reviewData = {
+            userId: user.uid,
+            fullName: postAnonymously ? 'Anonymous' : fullName, // Use fullName if not anonymous
+            rating: selectedRating,
+            review: reviewText,
+            createdAt: new Date().toISOString(),
+            anonymous: postAnonymously
+        };
 
-			// Reset form
-			selectedRating = 0;
-			reviewText = '';
-			postAnonymously = false;
+        if (userReviewDoc) {
+            await updateDoc(doc(db, 'medicines', medicine.id, 'reviews', userReviewDoc.id), {
+                ...reviewData,
+                updatedAt: new Date().toISOString()
+            });
+            toast.success('Review updated successfully!');
+        } else {
+            await addDoc(reviewRef, reviewData);
+            toast.success('Review submitted successfully!');
+        }
 
-			// Refresh reviews
-			await fetchReviews();
-			updateRatings();
-		} catch (error) {
-			console.error('Error submitting review:', error);
-			toast.error('Failed to submit review.');
-		}
-	};
+        // Reset form
+        selectedRating = 0;
+        reviewText = '';
+        postAnonymously = false;
+
+        // Refresh reviews
+        await fetchReviews();
+        updateRatings();
+    } catch (error) {
+        console.error('Error submitting review:', error);
+        toast.error('Failed to submit review.');
+    } finally {
+        loadingState = false; // Reset loading state
+    }
+};
+
 
 	const deleteReview = async () => {
 		if (!userReview) {
@@ -378,10 +384,12 @@
 					<div class="col-span-3 flex space-x-1">
 						{#each Array(5) as _, i}
 						<Star
-						  size={24}
-						  class={i < Math.round(averageRating) ? 'text-yellow-400' : 'text-gray-300'}
+							size={24}
+							class="cursor-pointer transition-colors duration-200 {i < selectedRating ? 'text-yellow-400' : 'text-gray-300'}"
+							onclick={() => selectedRating = i + 1} 
 						/>
 						{/each}
+
 					</div>
 					</div>
 
@@ -409,9 +417,14 @@
 				</div>
 
                 <Dialog.Footer>
-                  <Button onclick={submitReview} disabled={!selectedRating || !reviewText.trim()}>
-                    {userReview ? 'Update Review' : 'Submit Review'}
-                  </Button>
+					<Button onclick={submitReview} disabled={!selectedRating || !reviewText.trim() || loadingState}>
+						{#if loadingState}
+						  Submitting...
+						{/if}
+						{#if !loadingState}
+						  {userReview ? 'Update Review' : 'Submit Review'}
+						{/if}
+					  </Button>
 
 				  {#if userReview}
 				  <AlertDialog.Root>
