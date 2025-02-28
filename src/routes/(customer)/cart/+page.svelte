@@ -285,7 +285,7 @@
 				</span>
 			</div>
 			<span class="font-medium text-gray-700">Select Pickup Option:</span>
-			<select bind:value={pickupOption} class="rounded border p-2 p-2 w-full">
+			<select bind:value={pickupOption} class="rounded border p-2 w-full">
 				<option value="now">Pickup Now</option>
 				<option value="later">Schedule Pickup</option>
 			</select>

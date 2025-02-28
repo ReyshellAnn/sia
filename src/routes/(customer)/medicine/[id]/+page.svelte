@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { goto, onNavigate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import { writable } from 'svelte/store';
 
 	import {
 		collection,
@@ -26,7 +27,8 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
-	import { Star } from 'lucide-svelte';
+
+	import Star from 'lucide-svelte/icons/star';
 
 	let medicine: any = null;
 	let quantity = 1;
@@ -42,9 +44,13 @@
 	let userReview: any = null;
 	let reviews: any[] = [];
 	let averageRating: number = 0.0;
+	let isReviewDialogOpen = false;
 
 	let totalReviews = reviews.length; // Make sure this is updated after fetching reviews
 	let loadingState = false;
+
+	const showLoginDialog = writable(false);
+	const loginDialogMessage = writable('');
 
 	const fetchReviews = async () => {
 		try {
@@ -74,6 +80,11 @@
 			console.error('Error fetching reviews:', error);
 		}
 	};
+
+	function showLogin(message: string) {
+		loginDialogMessage.set(message);
+		showLoginDialog.set(true);
+	}
 
 	let ratings = [
 		{ stars: 5, count: 30 },
@@ -140,7 +151,7 @@
 
 	const addToCart = async (medicine: any, quantity: number) => {
 		if (!user) {
-			goto('/login');
+			showLogin('You need to be logged in to add to cart.');
 			return;
 		}
 
@@ -212,78 +223,82 @@
 	};
 
 	const submitReview = async () => {
-    if (!user) {
-        toast.error('You must be logged in to submit a review.');
-        return;
-    }
+		if (!user) {
+			toast.error('You must be logged in to submit a review.');
+			return;
+		}
 
-    if (!selectedRating || !reviewText.trim()) {
-        toast.error('Please provide a rating and a review.');
-        return;
-    }
+		if (!selectedRating || !reviewText.trim()) {
+			toast.error('Please provide a rating and a review.');
+			return;
+		}
 
-    loadingState = true; // Set loading state
+		loadingState = true; // Set loading state
 
-    try {
-        // Fetch user's fullName from 'users' collection
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
+		try {
+			// Fetch user's fullName from 'users' collection
+			const userDocRef = doc(db, 'users', user.uid);
+			const userDocSnap = await getDoc(userDocRef);
 
-        if (!userDocSnap.exists()) {
-            toast.error('User information not found.');
-            return;
-        }
+			if (!userDocSnap.exists()) {
+				toast.error('User information not found.');
+				return;
+			}
 
-        const { fullName } = userDocSnap.data();
+			const { fullName } = userDocSnap.data();
 
-        const reviewRef = collection(db, 'medicines', medicine.id, 'reviews');
-        const existingReviewSnapshot = await getDocs(reviewRef);
-        const userReviewDoc = existingReviewSnapshot.docs.find(
-            (doc) => doc.data().userId === user.uid
-        );
+			const reviewRef = collection(db, 'medicines', medicine.id, 'reviews');
+			const existingReviewSnapshot = await getDocs(reviewRef);
+			const userReviewDoc = existingReviewSnapshot.docs.find(
+				(doc) => doc.data().userId === user.uid
+			);
 
-        const reviewData = {
-            userId: user.uid,
-            fullName: postAnonymously ? 'Anonymous' : fullName, // Use fullName if not anonymous
-            rating: selectedRating,
-            review: reviewText,
-            createdAt: new Date().toISOString(),
-            anonymous: postAnonymously
-        };
+			const reviewData = {
+				userId: user.uid,
+				fullName: postAnonymously ? 'Anonymous' : fullName, // Use fullName if not anonymous
+				rating: selectedRating,
+				review: reviewText,
+				createdAt: new Date().toISOString(),
+				anonymous: postAnonymously
+			};
 
-        if (userReviewDoc) {
-            await updateDoc(doc(db, 'medicines', medicine.id, 'reviews', userReviewDoc.id), {
-                ...reviewData,
-                updatedAt: new Date().toISOString()
-            });
-            toast.success('Review updated successfully!');
-        } else {
-            await addDoc(reviewRef, reviewData);
-            toast.success('Review submitted successfully!');
-        }
+			if (userReviewDoc) {
+				await updateDoc(doc(db, 'medicines', medicine.id, 'reviews', userReviewDoc.id), {
+					...reviewData,
+					updatedAt: new Date().toISOString()
+				});
+				toast.success('Review updated successfully!');
+			} else {
+				await addDoc(reviewRef, reviewData);
+				toast.success('Review submitted successfully!');
+			}
 
-        // Reset form
-        selectedRating = 0;
-        reviewText = '';
-        postAnonymously = false;
+			// Reset form
+			selectedRating = 0;
+			reviewText = '';
+			postAnonymously = false;
 
-        // Refresh reviews
-        await fetchReviews();
-        updateRatings();
-    } catch (error) {
-        console.error('Error submitting review:', error);
-        toast.error('Failed to submit review.');
-    } finally {
-        loadingState = false; // Reset loading state
-    }
-};
+			// Refresh reviews
+			await fetchReviews();
+			updateRatings();
+			isReviewDialogOpen = false;
+		} catch (error) {
+			console.error('Error submitting review:', error);
+			toast.error('Failed to submit review.');
+		} finally {
+			loadingState = false; // Reset loading state
+		}
+	};
 
+	let isDeleting = writable(false);
 
 	const deleteReview = async () => {
 		if (!userReview) {
 			toast.error('No review to delete.');
 			return;
 		}
+
+		isDeleting.set(true); // Start loading state
 
 		try {
 			await deleteDoc(doc(db, 'medicines', medicine.id, 'reviews', userReview.id));
@@ -293,320 +308,376 @@
 			userReview = null;
 			await fetchReviews();
 			updateRatings();
+			isReviewDialogOpen = false;
 		} catch (error) {
 			console.error('Error deleting review:', error);
 			toast.error('Failed to delete review.');
+		} finally {
+			isDeleting.set(false); // End loading state
 		}
 	};
 </script>
 
 {#if medicine}
-  <div class="flex flex-row gap-6">
-    <Card.Root class="flex-1 border-none shadow-xl rounded-lg">
-      <Card.Content class="mx-auto flex flex-col items-center justify-center p-0">
-        <img
-          src={medicine.imageUrl || '/placeholder.png'}
-          alt={medicine.name}
-          class="w-full h-64 object-cover rounded-lg shadow-md"
-        />
+	<div class="flex flex-row gap-6">
+		<Card.Root class="flex-1 rounded-lg border-none shadow-xl">
+			<Card.Content class="mx-auto flex flex-col items-center justify-center p-0">
+				<img
+					src={medicine.imageUrl || '/placeholder.png'}
+					alt={medicine.name}
+					class="h-64 w-full rounded-lg object-cover shadow-md"
+				/>
 
-        <div class="w-full bg-white p-6 rounded-lg shadow-lg">
-          <h2 class="text-2xl font-semibold text-gray-800">Review</h2>
+				<div class="w-full rounded-lg bg-white p-6 shadow-lg">
+					<h2 class="text-2xl font-semibold text-gray-800">Review</h2>
 
-          <div class="flex flex-row items-center justify-between my-4">
-            <!-- Average Rating Display -->
-            <div class="flex flex-col items-center space-y-2">
-              <span class="text-5xl font-extrabold text-gray-800">{averageRating.toFixed(1)}</span>
-              <div class="flex">
-                {#each Array(5) as _, i}
-                  <Star
-                    size={24}
-                    class={i < Math.round(averageRating) ? 'text-yellow-400' : 'text-gray-300'}
-                  />
-                {/each}
-              </div>
-              <span class="text-gray-500 text-sm">{totalReviews} Reviews</span>
-            </div>
+					<div class="my-4 flex flex-row items-center justify-between">
+						<!-- Average Rating Display -->
+						<div class="flex flex-col items-center space-y-2">
+							<span class="text-5xl font-extrabold text-gray-800">{averageRating.toFixed(1)}</span>
+							<div class="flex">
+								{#each Array(5) as _, i}
+									<Star
+										size={24}
+										class={i < Math.round(averageRating) ? 'text-yellow-400' : 'text-gray-300'}
+									/>
+								{/each}
+							</div>
+							<span class="text-sm text-gray-500">{totalReviews} Reviews</span>
+						</div>
 
-			<!-- Rating Distribution Bars -->
-			<div class="mt-2">
-				{#each ratings as rating}
-				  <div class="flex items-center">
-					<span class="text-sm font-medium">{rating.stars} ★</span>
-					<div class="ml-2 h-2 w-64 overflow-hidden rounded-full bg-gray-200">
-					  <div
-						class="h-full bg-yellow-400"
-						style="width: {totalReviews > 0 ? (rating.count / totalReviews) * 100 : 0}%"
-					  ></div>
-					</div>
-					<span class="ml-2 text-sm">{rating.count}</span>
-				  </div>
-				{/each}
-			  </div>			  
-			</div>
-
-          <Separator class="my-6 border-t border-gray-300" />
-
-          <!-- Total Reviews Display -->
-          <div class="flex justify-between items-center mb-4">
-            <p class="text-lg font-semibold text-gray-800">
-              {reviews.length} <span class="text-sm font-light text-gray-500">Reviews</span>
-            </p>
-
-            <!-- Review Dialog -->
-            <Dialog.Root>
-              <Dialog.Trigger
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
-                onclick={() => {
-                  if (userReview) {
-                    selectedRating = userReview.rating;
-                    reviewText = userReview.review;
-                  } else {
-                    selectedRating = 0;
-                    reviewText = '';
-                  }
-                }}
-              >
-                {userReview ? 'Edit Review' : 'Write Review'}
-              </Dialog.Trigger>
-
-              <Dialog.Content class="sm:max-w-[425px]">
-                <Dialog.Header>
-                  <Dialog.Title>📝 Write a Review</Dialog.Title>
-                  <Dialog.Description>Share your thoughts about {medicine.name}</Dialog.Description>
-                </Dialog.Header>
-
-				<!-- Review Form -->
-				<div class="grid gap-4 py-4">
-					<!-- Rating Section -->
-					<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="rating" class="text-right">Rating</Label>
-					<div class="col-span-3 flex space-x-1">
-						{#each Array(5) as _, i}
-						<Star
-							size={24}
-							class="cursor-pointer transition-colors duration-200 {i < selectedRating ? 'text-yellow-400' : 'text-gray-300'}"
-							onclick={() => selectedRating = i + 1} 
-						/>
-						{/each}
-
-					</div>
-					</div>
-
-								<!-- Review Text Section -->
-				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="review" class="text-right">Review</Label>
-					<Textarea
-					id="review"
-					bind:value={reviewText}
-					class="col-span-3 rounded border p-2"
-					placeholder="Write your review here..."
-					></Textarea>
-				</div>
-
-				<!-- Anonymous Checkbox Section -->
-				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="anonymous" class="text-right">Anonymous</Label>
-					<input
-					id="anonymous"
-					type="checkbox"
-					bind:checked={postAnonymously}
-					class="col-span-3 h-4 w-4"
-					/>
-				</div>
-				</div>
-
-                <Dialog.Footer>
-					<Button onclick={submitReview} disabled={!selectedRating || !reviewText.trim() || loadingState}>
-						{#if loadingState}
-						  Submitting...
-						{/if}
-						{#if !loadingState}
-						  {userReview ? 'Update Review' : 'Submit Review'}
-						{/if}
-					  </Button>
-
-				  {#if userReview}
-				  <AlertDialog.Root>
-					<AlertDialog.Trigger class={buttonVariants({ variant: 'destructive' })}>
-					  Delete Review
-					</AlertDialog.Trigger>
-			  
-					<AlertDialog.Content>
-					  <AlertDialog.Header>
-						<AlertDialog.Title>Are you sure you want to delete your review?</AlertDialog.Title>
-						<AlertDialog.Description>
-						  This action cannot be undone. Your review will be permanently removed.
-						</AlertDialog.Description>
-					  </AlertDialog.Header>
-			  
-					  <AlertDialog.Footer>
-						<AlertDialog.Cancel class={buttonVariants({ variant: 'outline' })}>
-						  Cancel
-						</AlertDialog.Cancel>
-						<AlertDialog.Action
-						  class={buttonVariants({ variant: 'destructive' })}
-						  onclick={deleteReview}
-						>
-						  Delete
-						</AlertDialog.Action>
-					  </AlertDialog.Footer>
-					</AlertDialog.Content>
-				  </AlertDialog.Root>
-				{/if}
-			  </Dialog.Footer>
-              </Dialog.Content>
-            </Dialog.Root>
-          </div>
-
-			<!-- Review List -->
-			<div class="mt-6">
-				<ScrollArea class="h-48 w-full">
-				{#if reviews.length > 0}
-					{#each reviews as review}
-					<div class="mb-4 rounded-lg border p-4 shadow-md">
-						<div class="flex items-center space-x-2">
-						<p class="font-semibold">
-							{review.anonymous ? 'Anonymous' : review.fullName}
-						</p>
-						<div class="flex">
-							{#each Array(5) as _, i}
-							<span class={i < review.rating ? 'text-yellow-400' : 'text-gray-400'}>
-								★
-							</span>
+						<!-- Rating Distribution Bars -->
+						<div class="mt-2">
+							{#each ratings as rating}
+								<div class="flex items-center">
+									<span class="text-sm font-medium">{rating.stars} ★</span>
+									<div class="ml-2 h-2 w-64 overflow-hidden rounded-full bg-gray-200">
+										<div
+											class="h-full bg-yellow-400"
+											style="width: {totalReviews > 0 ? (rating.count / totalReviews) * 100 : 0}%"
+										></div>
+									</div>
+									<span class="ml-2 text-sm">{rating.count}</span>
+								</div>
 							{/each}
 						</div>
-						</div>
-						<p class="mt-2 text-gray-700">{review.review}</p>
-						<p class="text-sm text-gray-500">
-						{new Date(review.createdAt).toLocaleDateString()}
+					</div>
+
+					<Separator class="my-6 border-t border-gray-300" />
+
+					<!-- Total Reviews Display -->
+					<div class="mb-4 flex items-center justify-between">
+						<p class="text-lg font-semibold text-gray-800">
+							{reviews.length} <span class="text-sm font-light text-gray-500">Reviews</span>
 						</p>
 
-						{#if review.userId === user?.uid}
-						<AlertDialog.Root>
-						  <AlertDialog.Trigger
-						  class={`mt-2 h-6 w-14 text-xs ${buttonVariants({ variant: 'destructive' })}`}
-						  >
-							Delete
-						  </AlertDialog.Trigger>
-			
-						  <AlertDialog.Content>
-							<AlertDialog.Header>
-							  <AlertDialog.Title>Are you sure you want to delete your review?</AlertDialog.Title>
-							  <AlertDialog.Description>
-								This action cannot be undone. Your review will be permanently removed.
-							  </AlertDialog.Description>
-							</AlertDialog.Header>
-			
-							<AlertDialog.Footer>
-							  <AlertDialog.Cancel class={buttonVariants({ variant: 'outline' })}>
-								Cancel
-							  </AlertDialog.Cancel>
-							  <AlertDialog.Action
-								class={buttonVariants({ variant: 'destructive' })}
-								onclick={deleteReview}
-							  >
-								Delete
-							  </AlertDialog.Action>
-							</AlertDialog.Footer>
-						  </AlertDialog.Content>
-						</AlertDialog.Root>
-					  {/if}
+						<!-- Review Dialog -->
+						<Dialog.Root bind:open={isReviewDialogOpen}>
+							<Dialog.Trigger
+								class="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700"
+								onclick={(event) => {
+									if (!user) {
+										showLogin('You need to be logged in to be able to review.'); // Show login dialog if not logged in
+										event.preventDefault(); // Prevents opening the review dialog
+										event.stopPropagation(); // Stops event from bubbling up
+										return;
+									}
+
+									if (userReview) {
+										selectedRating = userReview.rating;
+										reviewText = userReview.review;
+									} else {
+										selectedRating = 0;
+										reviewText = '';
+									}
+								}}
+							>
+								{userReview ? 'Edit Review' : 'Write Review'}
+							</Dialog.Trigger>
+
+							<Dialog.Content class="sm:max-w-[425px]">
+								<Dialog.Header>
+									<Dialog.Title>📝 Write a Review</Dialog.Title>
+									<Dialog.Description>Share your thoughts about {medicine.name}</Dialog.Description>
+								</Dialog.Header>
+
+								<!-- Review Form -->
+								<div class="grid gap-4 py-4">
+									<!-- Rating Section -->
+									<div class="grid grid-cols-4 items-center gap-4">
+										<Label for="rating" class="text-right">Rating</Label>
+										<div class="col-span-3 flex space-x-1">
+											{#each Array(5) as _, i}
+												<Star
+													size={24}
+													class="cursor-pointer transition-colors duration-200 {i < selectedRating
+														? 'text-yellow-400'
+														: 'text-gray-300'}"
+													onclick={() => (selectedRating = i + 1)}
+												/>
+											{/each}
+										</div>
+									</div>
+
+									<!-- Review Text Section -->
+									<div class="grid grid-cols-4 items-center gap-4">
+										<Label for="review" class="text-right">Review</Label>
+										<Textarea
+											id="review"
+											bind:value={reviewText}
+											class="col-span-3 rounded border p-2"
+											placeholder="Write your review here..."
+										></Textarea>
+									</div>
+
+									<!-- Anonymous Checkbox Section -->
+									<div class="grid grid-cols-4 items-center gap-4">
+										<Label for="anonymous" class="text-right">Anonymous</Label>
+										<input
+											id="anonymous"
+											type="checkbox"
+											bind:checked={postAnonymously}
+											class="col-span-3 h-4 w-4"
+										/>
+									</div>
+								</div>
+
+								<Dialog.Footer>
+									<Button
+										onclick={submitReview}
+										disabled={!selectedRating || !reviewText.trim() || loadingState}
+									>
+										{#if loadingState}
+											Submitting...
+										{/if}
+										{#if !loadingState}
+											{userReview ? 'Update Review' : 'Submit Review'}
+										{/if}
+									</Button>
+
+									{#if userReview}
+										<AlertDialog.Root>
+											<AlertDialog.Trigger class={buttonVariants({ variant: 'destructive' })}>
+												Delete Review
+											</AlertDialog.Trigger>
+
+											<AlertDialog.Content>
+												<AlertDialog.Header>
+													<AlertDialog.Title
+														>Are you sure you want to delete your review?</AlertDialog.Title
+													>
+													<AlertDialog.Description>
+														This action cannot be undone. Your review will be permanently removed.
+													</AlertDialog.Description>
+												</AlertDialog.Header>
+
+												<AlertDialog.Footer>
+													<AlertDialog.Cancel class={buttonVariants({ variant: 'outline' })}>
+														Cancel
+													</AlertDialog.Cancel>
+													<AlertDialog.Action
+														class={buttonVariants({ variant: 'destructive' })}
+														onclick={deleteReview}
+														disabled={$isDeleting}
+													>
+														{#if $isDeleting}
+															Deleting...
+														{:else}
+															Delete
+														{/if}
+													</AlertDialog.Action>
+												</AlertDialog.Footer>
+											</AlertDialog.Content>
+										</AlertDialog.Root>
+									{/if}
+								</Dialog.Footer>
+							</Dialog.Content>
+						</Dialog.Root>
 					</div>
-				  {/each}
-				{:else}
-				  <p class="text-gray-500">No reviews yet. Be the first to write one!</p>
-				{/if}
-			  </ScrollArea>
-			</div>
-        </div>
-      </Card.Content>
-    </Card.Root>
 
-    <Card.Root class="flex-1 border-none shadow-xl rounded-lg">
-      <Card.Content class="mx-auto flex flex-col items-start justify-start space-y-4 p-6">
-        <span class="text-3xl font-medium">{medicine.name}</span>
+					<!-- Review List -->
+					<div class="mt-6">
+						<ScrollArea class="h-48 w-full">
+							{#if reviews.length > 0}
+								{#each reviews as review}
+									<div class="mb-4 rounded-lg border p-4 shadow-md">
+										<div class="flex items-center space-x-2">
+											<p class="font-semibold">
+												{review.anonymous ? 'Anonymous' : review.fullName}
+											</p>
+											<div class="flex">
+												{#each Array(5) as _, i}
+													<span class={i < review.rating ? 'text-yellow-400' : 'text-gray-400'}>
+														★
+													</span>
+												{/each}
+											</div>
+										</div>
+										<p class="mt-2 text-gray-700">{review.review}</p>
+										<p class="text-sm text-gray-500">
+											{new Date(review.createdAt).toLocaleDateString()}
+										</p>
 
-        <!-- Star Rating -->
-        <div class="flex items-center gap-2">
-			{#each Array(5) as _, i}
-			<Star
-			  size={24}
-			  class={i < Math.round(averageRating) ? 'text-yellow-400' : 'text-gray-300'}
-			/>
-		  {/each}
-          <span class="text-sm text-gray-500">({totalReviews})</span>
-        </div>
+										{#if review.userId === user?.uid}
+											<AlertDialog.Root>
+												<AlertDialog.Trigger
+													class={`mt-2 h-6 w-14 text-xs ${buttonVariants({ variant: 'destructive' })}`}
+												>
+													Delete
+												</AlertDialog.Trigger>
 
-        <span class="text-2xl text-green-600 font-medium">₱{medicine.price}</span>
-        <span class="text-sm text-gray-500">Stock: {medicine.stock}</span>
+												<AlertDialog.Content>
+													<AlertDialog.Header>
+														<AlertDialog.Title
+															>Are you sure you want to delete your review?</AlertDialog.Title
+														>
+														<AlertDialog.Description>
+															This action cannot be undone. Your review will be permanently removed.
+														</AlertDialog.Description>
+													</AlertDialog.Header>
 
-        <Separator class="my-4" />
+													<AlertDialog.Footer>
+														<AlertDialog.Cancel class={buttonVariants({ variant: 'outline' })}>
+															Cancel
+														</AlertDialog.Cancel>
+														<AlertDialog.Action
+														class={buttonVariants({ variant: 'destructive' })}
+														onclick={deleteReview}
+														disabled={$isDeleting}
+													>
+														{#if $isDeleting}
+															Deleting...
+														{:else}
+															Delete
+														{/if}
+													</AlertDialog.Action>
+													</AlertDialog.Footer>
+												</AlertDialog.Content>
+											</AlertDialog.Root>
+										{/if}
+									</div>
+								{/each}
+							{:else}
+								<p class="text-gray-500">No reviews yet. Be the first to write one!</p>
+							{/if}
+						</ScrollArea>
+					</div>
+				</div>
+			</Card.Content>
+		</Card.Root>
 
-        <span class="text-base font-medium">Quantity</span>
-        <div class="flex gap-4">
-          <Input
-            type="number"
-            bind:value={quantity}
-            class="w-24 rounded-lg border p-2"
-            min="1"
-            max={medicine?.stock || 0}
-            disabled={medicine?.stock === 0}
-          />
-          <Button
-            class="flex-1 rounded-lg py-2 px-4 bg-green-600 hover:bg-green-700 text-white"
-            onclick={() => addToCart(medicine, quantity)}
-            disabled={loading[medicine.id]}
-          >
-            {#if loading[medicine.id]} Adding... {:else} Add To Cart {/if}
-          </Button>
-        </div>
+		<Card.Root class="flex-1 rounded-lg border-none shadow-xl">
+			<Card.Content class="mx-auto flex flex-col items-start justify-start space-y-4 p-6">
+				<span class="text-3xl font-medium">{medicine.name}</span>
 
-        <span class="text-lg font-medium mt-4">About the Product</span>
-        <p>{medicine.description || 'No description available'}</p>
-      </Card.Content>
-    </Card.Root>
-  </div>
+				<!-- Star Rating -->
+				<div class="flex items-center gap-2">
+					{#each Array(5) as _, i}
+						<Star
+							size={24}
+							class={i < Math.round(averageRating) ? 'text-yellow-400' : 'text-gray-300'}
+						/>
+					{/each}
+					<span class="text-sm text-gray-500">({totalReviews})</span>
+				</div>
 
-  <Card.Root>
-    <Card.Content><Card.Title>You may also like</Card.Title></Card.Content>
-  </Card.Root>
-  <div class="flex w-full justify-center mt-6">
-    <Carousel.Root class="w-full max-w-6xl">
-      <Carousel.Content class="-ml-1">
-        {#each medicines.filter((m) => m.id !== currentId) as medicine, i (i)}
-		<Carousel.Item
-		class="pl-1 md:basis-1/3 lg:basis-1/4"
-		onclick={() => goToMedicine(medicine.id)}
-	>
-        
-            <div class="p-2">
-              <Card.Root>
-                <Card.Content class="flex aspect-square items-center justify-center p-4 hover:cursor-pointer hover:bg-primary-foreground">
-                  <img src={medicine.imageUrl} alt="Medicine" class="h-64 w-64 object-cover rounded-md" />
-                </Card.Content>
-                <Card.Footer class="flex flex-col items-start space-y-2 p-4">
-                  <span class="text-lg font-medium">{medicine.name}</span>
-                  <span class="text-lg font-medium">₱{medicine.price}</span>
-                  <Button
-                    class="w-full bg-blue-600 text-white py-2"
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      addToCart(medicine, 1);
-                    }}
-                    disabled={loading[medicine.id]}
-                  >
-                    {#if loading[medicine.id]} Adding... {:else} Add To Cart {/if}
-                  </Button>
-                </Card.Footer>
-              </Card.Root>
-            </div>
-          </Carousel.Item>
-        {/each}
-      </Carousel.Content>
-      <Carousel.Previous />
+				<span class="text-2xl font-medium text-green-600">₱{medicine.price}</span>
+				<span class="text-sm text-gray-500">Stock: {medicine.stock}</span>
+
+				<Separator class="my-4" />
+
+				<span class="text-base font-medium">Quantity</span>
+				<div class="flex gap-4">
+					<Input
+						type="number"
+						bind:value={quantity}
+						class="w-24 rounded-lg border p-2"
+						min="1"
+						max={medicine?.stock || 0}
+						disabled={medicine?.stock === 0}
+					/>
+					<Button
+						class="flex-1 rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+						onclick={() => addToCart(medicine, quantity)}
+						disabled={loading[medicine.id]}
+					>
+						{#if loading[medicine.id]}
+							Adding...
+						{:else}
+							Add To Cart
+						{/if}
+					</Button>
+				</div>
+
+				<span class="mt-4 text-lg font-medium">About the Product</span>
+				<p>{medicine.description || 'No description available'}</p>
+			</Card.Content>
+		</Card.Root>
+	</div>
+
+	<Card.Root>
+		<Card.Content><Card.Title>You may also like</Card.Title></Card.Content>
+	</Card.Root>
+	<div class="mt-6 flex w-full justify-center">
+		<Carousel.Root class="w-full max-w-6xl">
+			<Carousel.Content class="-ml-1">
+				{#each medicines.filter((m) => m.id !== currentId) as medicine, i (i)}
+					<Carousel.Item
+						class="pl-1 md:basis-1/3 lg:basis-1/4"
+						onclick={() => goToMedicine(medicine.id)}
+					>
+						<div class="p-2">
+							<Card.Root>
+								<Card.Content
+									class="flex aspect-square items-center justify-center p-4 hover:cursor-pointer hover:bg-primary-foreground"
+								>
+									<img
+										src={medicine.imageUrl}
+										alt="Medicine"
+										class="h-64 w-64 rounded-md object-cover"
+									/>
+								</Card.Content>
+								<Card.Footer class="flex flex-col items-start space-y-2 p-4">
+									<span class="text-lg font-medium">{medicine.name}</span>
+									<span class="text-lg font-medium">₱{medicine.price}</span>
+									<Button
+										class="w-full bg-blue-600 py-2 text-white"
+										onclick={(e) => {
+											e.stopPropagation();
+											addToCart(medicine, 1);
+										}}
+										disabled={loading[medicine.id]}
+									>
+										{#if loading[medicine.id]}
+											Adding...
+										{:else}
+											Add To Cart
+										{/if}
+									</Button>
+								</Card.Footer>
+							</Card.Root>
+						</div>
+					</Carousel.Item>
+				{/each}
+			</Carousel.Content>
+			<Carousel.Previous />
 
 			<Carousel.Next />
 		</Carousel.Root>
 	</div>
+{/if}
+
+{#if $showLoginDialog}
+	<Dialog.Root bind:open={$showLoginDialog}>
+		<Dialog.Content class="sm:max-w-[400px]">
+			<Dialog.Header>
+				<Dialog.Title>Login Required</Dialog.Title>
+				<Dialog.Description>{$loginDialogMessage}</Dialog.Description>
+			</Dialog.Header>
+			<Dialog.Footer class="flex justify-end gap-4">
+				<Button variant="outline" onclick={() => showLoginDialog.set(false)}>Cancel</Button>
+				<Button onclick={() => goto('/login')}>Login</Button>
+			</Dialog.Footer>
+		</Dialog.Content>
+	</Dialog.Root>
 {/if}

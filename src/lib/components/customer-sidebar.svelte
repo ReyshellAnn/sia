@@ -7,10 +7,12 @@
 	import History from 'lucide-svelte/icons/history';
 	import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import * as Dialog from "$lib/components/ui/dialog/index.js";
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { user } from '$lib/stores/authStore'; // Import the user store
 	import { auth } from '$lib/firebase';
 	import { goto } from '$app/navigation';
+	import { writable } from 'svelte/store';
 
 	// Menu items.
 	const items = [
@@ -40,6 +42,15 @@
 			icon: Settings
 		}
 	];
+	const showLoginDialog = writable(false);
+
+		// Handle clicking on Cart
+		const handleCartClick = (event: Event) => {
+		if (!$user) {
+			event.preventDefault(); // Prevent navigation
+			showLoginDialog.set(true); // Show dialog instead
+		}
+	};
 
 	// Function to handle logout
 	const handleLogout = async () => {
@@ -58,7 +69,9 @@
 		<Sidebar.Group>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu class="font-medium">
-					{#each items as item (item.title)}
+					{#each items.filter(item => 
+						$user || !['Settings', 'Pending Pickups', 'Order History'].includes(item.title)
+					) as item (item.title)}
 						<Sidebar.MenuItem
 							class="transform rounded-lg border-2 border-transparent transition-all duration-200 ease-in-out hover:scale-105 hover:border-orange-400 hover:shadow-lg {$page
 								.url.pathname === item.url
@@ -72,10 +85,10 @@
 									: ''}"
 							>
 								{#snippet child({ props })}
-									<a href={item.url} {...props}>
-										<item.icon class="mr-4" />
-										<span>{item.title}</span>
-									</a>
+								<a href={item.url} {...props} on:click={item.title === 'Cart' ? handleCartClick : undefined}>
+									<item.icon class="mr-4" />
+									<span>{item.title}</span>
+								</a>
 								{/snippet}
 							</Sidebar.MenuButton>
 						</Sidebar.MenuItem>
@@ -97,3 +110,16 @@
 		</Sidebar.Footer>
 	{/if}
 </Sidebar.Root>
+<!-- Login Dialog -->
+<Dialog.Root bind:open={$showLoginDialog}>
+	<Dialog.Content class="sm:max-w-[400px]">
+		<Dialog.Header>
+			<Dialog.Title>Login Required</Dialog.Title>
+			<Dialog.Description>You need to be logged in to access your cart.</Dialog.Description>
+		</Dialog.Header>
+		<Dialog.Footer class="flex justify-end gap-4">
+			<Button variant="outline" onclick={() => showLoginDialog.set(false)}>Cancel</Button>
+			<Button onclick={() => goto('/login')}>Login</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>

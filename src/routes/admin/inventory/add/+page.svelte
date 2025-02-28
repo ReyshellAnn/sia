@@ -272,7 +272,7 @@
 		>
 			{#if isLoading}
 				<span
-					class="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"
+					class="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-transparent"
 				></span>
 			{:else}
 				<Check /> Submit
