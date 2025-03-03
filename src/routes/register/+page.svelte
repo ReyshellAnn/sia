@@ -74,7 +74,7 @@
 	}
 </script>
 
-<div class="flex h-screen w-full items-center justify-center bg-blue-200 px-4">
+<div class="flex h-screen w-full items-center justify-center bg-orange-300 px-4">
 	<Toaster />
 	<Card.Root class="mx-auto max-w-sm">
 		<Card.Header>
@@ -104,7 +104,7 @@
 				</div>
 				<!-- Google reCAPTCHA with global callback reference -->
 				<div class="g-recaptcha" data-sitekey={siteKey} data-callback="onCaptchaSuccess"></div>
-				<Button type="submit" class="w-full" onclick={register} disabled={isLoading}>
+				<Button type="submit" class="w-full bg-orange-400 hover:bg-orange-300" onclick={register} disabled={isLoading}>
 					{#if isLoading}
 						<span>Loading...</span>
 					{:else}
