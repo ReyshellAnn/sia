@@ -172,16 +172,20 @@
 </script>
 
 <!-- Search and Filter UI -->
-<div class="mb-4 flex justify-between gap-4">
+<div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 	<input
 		type="text"
 		placeholder="Search medicine..."
 		bind:value={searchQuery}
 		on:input={filterMedicines}
-		class="w-full max-w-xs rounded-md border p-2"
+		class="w-full rounded-md border p-2 sm:max-w-xs"
 	/>
 
-	<select bind:value={selectedCategory} on:change={filterMedicines} class="rounded-md border p-2">
+	<select 
+		bind:value={selectedCategory} 
+		on:change={filterMedicines} 
+		class="w-full rounded-md border p-2 sm:w-auto"
+	>
 		<option value="">All Categories</option>
 		<option value="Allergy & Antihistamines">Allergy & Antihistamines</option>
 		<option value="Antibiotics">Antibiotics</option>
@@ -195,8 +199,9 @@
 	</select>
 </div>
 
+
 <!-- Medicine Cards -->
-<div class="flex flex-wrap">
+<div class="flex flex-wrap justify-center sm:justify-start">
 	{#each filteredMedicines as medicine}
 		<Card.Root class="flex w-60 flex-col overflow-hidden rounded-none border-none bg-white">
 			<Card.Content

@@ -868,7 +868,7 @@
 			<Carousel.Content class="-ml-1">
 				{#each medicines.filter((m) => m.id !== currentId) as medicine, i (i)}
 					<Carousel.Item
-						class="pl-1 md:basis-1/3 lg:basis-1/4"
+						class="pl-1 basis-2/3 sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
 						onclick={() => goToMedicine(medicine.id)}
 					>
 						<div class="p-2">
@@ -879,7 +879,7 @@
 									<img
 										src={medicine.imageUrl}
 										alt="Medicine"
-										class="h-64 w-64 rounded-md object-cover"
+										class="h-48 w-48 sm:h-56 sm:w-56 md:h-64 md:w-64 rounded-md object-cover"
 									/>
 								</Card.Content>
 								<Card.Footer class="flex flex-col items-start space-y-2 p-4">
@@ -906,10 +906,10 @@
 				{/each}
 			</Carousel.Content>
 			<Carousel.Previous />
-
 			<Carousel.Next />
 		</Carousel.Root>
 	</div>
+	
 {/if}
 
 {#if $showLoginDialog}
