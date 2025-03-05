@@ -15,120 +15,43 @@
 	import { writable, get } from 'svelte/store';
 	import { onMount } from 'svelte';
 
-	// Declare without initializing
-let loginAttempts = writable(0);
-let lockoutTime = writable(0);
-
-	onMount(() => {
-    loginAttempts.set(parseInt(localStorage.getItem('loginAttempts') || '0'));
-    lockoutTime.set(parseInt(localStorage.getItem('lockoutTime') || '0'));
-
-    // Now, sync with localStorage
-    loginAttempts.subscribe(value => localStorage.setItem('loginAttempts', value.toString()));
-    lockoutTime.subscribe(value => {
-        if (value > 0) {
-            localStorage.setItem('lockoutTime', value.toString());
-        } else {
-            localStorage.removeItem('lockoutTime');
-        }
-    });
-});
-
 	let email = '';
 	let password = '';
 	let errorMessage = '';
 	let isLoading = false; // Loading state flag
 	let showForgotPassword = writable(false);
 
-	// Sync loginAttempts to localStorage
-	loginAttempts.subscribe(value => localStorage.setItem('loginAttempts', value.toString()));
+    async function login(event: Event) {
+        event.preventDefault();
+        if (isLoading) return;
+        isLoading = true;
+    
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+    
+            if (!userDoc.exists()) {
+                toast.error("User not found!");
+                return;
+            }
+    
+            const userData = userDoc.data();
+            if (userData.role !== "customer") {
+                toast.error("Access denied. Only customers can log in.");
+                return;
+            }
+    
+            toast.success("Login successful!");
+            goto("/");
+        } catch (error: any) {
+            console.error("Login error:", error.code, error.message);
+            toast.error(`Login failed: ${error.message}`);
+        }
+    
+        isLoading = false;
+    }
 
-	// Sync lockoutTime to localStorage
-	lockoutTime.subscribe(value => {
-	    if (value > 0) {
-	        localStorage.setItem('lockoutTime', value.toString());
-	    } else {
-	        localStorage.removeItem('lockoutTime');
-	    }
-	});
-
-	async function login(event: Event) {
-	    event.preventDefault();
-
-	    if (isLoading) return; // Prevent spamming
-	    isLoading = true;
-
-	    const maxLoginAttempts = 5;
-	    const lockoutDuration = 60 * 1000; // 60 seconds
-
-	    let attemptsValue = get(loginAttempts);
-	    let lockoutValue = get(lockoutTime);
-
-	    // 🔥 Show remaining lockout time
-	    if (Date.now() < lockoutValue) {
-	        let remainingTime = Math.ceil((lockoutValue - Date.now()) / 1000);
-	        toast.error(`Too many failed attempts. Try again in ${remainingTime} seconds.`);
-	        isLoading = false;
-	        return;
-	    }
-
-	    try {
-	        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-	        const user = userCredential.user;
-	        const userDoc = await getDoc(doc(db, "users", user.uid));
-
-	        if (!userDoc.exists()) {
-	            toast.error("User not found!");
-	            return;
-	        }
-
-	        const userData = userDoc.data();
-	        if (userData.role !== "customer") {
-	            toast.error("Access denied. Only customers can log in.");
-	            return;
-	        }
-
-	        // 🔥 Reset login attempts & lockout when successful
-	        loginAttempts.set(0);
-	        lockoutTime.set(0);
-
-	        toast.success("Login successful!");
-	        goto("/");
-	    } catch (error: any) {
-	        console.error("Login error:", error.code, error.message); // 🔍 Debugging log
-
-	        if (
-	            error.code === "auth/invalid-email" ||
-	            error.code === "auth/user-not-found" ||
-	            error.code === "auth/wrong-password"
-	        ) {
-	            let newAttempts = get(loginAttempts) + 1;
-	            loginAttempts.set(newAttempts);
-
-	            if (newAttempts >= maxLoginAttempts) {
-	                const lockoutUntil = Date.now() + lockoutDuration;
-	                lockoutTime.set(lockoutUntil);
-	                toast.error("Too many failed attempts. Try again in 60 seconds.");
-	            } else {
-	                toast.error("Invalid email or password.");
-	            }
-	        } else {
-	            // 🔥 Display actual Firebase error
-	            toast.error(`Login failed: ${error.message}`);
-	        }
-	    }
-
-	    isLoading = false;
-	}
-
-	// Check lockout status on page load
-	function checkLockoutStatus() {
-	    const savedLockout = localStorage.getItem('lockoutTime');
-	    if (savedLockout && Date.now() < parseInt(savedLockout)) {
-	        lockoutTime.set(parseInt(savedLockout));
-	    }
-	}
-	checkLockoutStatus();
 
 
 

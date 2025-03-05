@@ -1,60 +1,55 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { get } from 'svelte/store';
 
 	import { collection, getDocs, query, where } from 'firebase/firestore';
 	import { db, auth } from '$lib/firebase';
-	import { onAuthStateChanged } from 'firebase/auth';
+	import { user } from '$lib/stores/authStore';
 
 	import * as Card from '$lib/components/ui/card/index.js';
 
-	let user = null;
 	let pickupOrders: any[] = [];
 	let loading = true;
 	let totalPrice = 0;
 
-	onMount(() => {
-		onAuthStateChanged(auth, async (currentUser) => {
-			if (!currentUser) {
-				goto('/login');
-				return;
-			}
+	onMount(async () => {
+		const currentUser = get(user); // Get the authenticated user
+		if (!currentUser) return; // Should never happen due to +page.ts
 
-			user = currentUser;
+		try {
+			// Query all pickup orders for the current user
+			const q = query(collection(db, 'pickup'), where('userId', '==', currentUser.uid));
+			const querySnapshot = await getDocs(q);
+
+			// Process the pickup orders
+			pickupOrders = querySnapshot.docs.map((doc) => {
+				const data = doc.data();
+				const items = data.items || []; // Ensure items array exists
+
+				// Calculate total price per order
+				const orderTotal = items.reduce(
+					(sum: number, item: { price: number; quantity: number }) =>
+						sum + item.price * item.quantity,
+					0
+				);
+
+				return {
+					id: doc.id,
+					createdAt: data.createdAt || 'Unknown Date',
+					pickupTime: data.pickupTime || 'ASAP',
+					items,
+					orderTotal
+				};
+			});
+
+			// Compute the overall total price
+			totalPrice = pickupOrders.reduce((sum, order) => sum + order.orderTotal, 0);
+		} catch (error) {
+			console.error('Error fetching pickup orders:', error);
+		} finally {
 			loading = false;
-
-			try {
-				// Query all pickup orders for the current user
-				const q = query(collection(db, 'pickup'), where('userId', '==', user.uid));
-				const querySnapshot = await getDocs(q);
-
-				// Process the pickup orders
-				pickupOrders = querySnapshot.docs.map((doc) => {
-					const data = doc.data();
-					const items = data.items || []; // Ensure items array exists
-
-					// Calculate total price per order
-					const orderTotal = items.reduce(
-						(sum: number, item: { price: number; quantity: number }) =>
-							sum + item.price * item.quantity,
-						0
-					);
-
-					return {
-						id: doc.id,
-						createdAt: data.createdAt || 'Unknown Date',
-						pickupTime: data.pickupTime || 'ASAP',
-						items,
-						orderTotal
-					};
-				});
-
-				// Compute the overall total price
-				totalPrice = pickupOrders.reduce((sum, order) => sum + order.orderTotal, 0);
-			} catch (error) {
-				console.error('Error fetching pickup orders:', error);
-			}
-		});
+		}
 	});
 </script>
 

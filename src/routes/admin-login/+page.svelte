@@ -11,48 +11,59 @@
 	import { doc, getDoc } from 'firebase/firestore';
 	import { db } from '$lib/firebase'; // Firestore reference
 
+	import { user } from '$lib/stores/authStore'; // Import the auth store
+
 	let email = '';
 	let password = '';
 	let errorMessage = '';
 	let isLoading = false; // Loading state flag
 
 	async function login(event: Event) {
-		event.preventDefault();
-		isLoading = true; // Set loading state to true
+	event.preventDefault();
+	isLoading = true; // Set loading state to true
 
-		try {
-			// Sign in with Firebase Auth
-			const userCredential = await signInWithEmailAndPassword(auth, email, password);
+	try {
+		// Sign in with Firebase Auth
+		const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-			// Fetch the user role from Firestore
-			const user = userCredential.user;
-			const userDocRef = doc(db, 'users', user.uid);
-			const userDoc = await getDoc(userDocRef);
+		// ✅ Use a different name for the Firebase user
+		const firebaseUser = userCredential.user;
+		const userDocRef = doc(db, 'users', firebaseUser.uid);
+		const userDoc = await getDoc(userDocRef);
 
-			if (userDoc.exists()) {
-				const userData = userDoc.data();
-				if (userData?.role === 'admin') {
-					console.log('User is an admin. Redirecting to admin page.');
-					window.location.href = '/admin'; // Redirect to the admin page
-				} else {
-					errorMessage = 'You do not have permission to access this page.';
-					console.error('User is not an admin.');
-				}
+		if (userDoc.exists()) {
+			const userData = userDoc.data();
+			if (userData?.role === 'admin') {
+				console.log('User is an admin. Redirecting to admin page.');
+
+				// ✅ Update the Svelte store with user info
+				user.set({
+					uid: firebaseUser.uid,
+					email: firebaseUser.email,
+					...userData
+				});
+
+				// ✅ Use SvelteKit navigation instead of window.location
+				import('$app/navigation').then(({ goto }) => goto('/admin'));
 			} else {
-				errorMessage = 'User data not found. Please contact support.';
-				console.error('User document not found in Firestore.');
+				errorMessage = 'You do not have permission to access this page.';
+				console.error('User is not an admin.');
 			}
-		} catch (error) {
-			if (error instanceof Error) {
-				errorMessage = error.message; // Display the error message
-			} else {
-				errorMessage = 'An unexpected error occurred.';
-			}
-			console.error('Login error:', error);
-		} finally {
-			isLoading = false; // Reset loading state
+		} else {
+			errorMessage = 'User data not found. Please contact support.';
+			console.error('User document not found in Firestore.');
 		}
+	} catch (error) {
+		if (error instanceof Error) {
+			errorMessage = error.message; // Display the error message
+		} else {
+			errorMessage = 'An unexpected error occurred.';
+		}
+		console.error('Login error:', error);
+	} finally {
+		isLoading = false; // Reset loading state
 	}
+}
 </script>
 
 <div class="flex h-screen w-full items-center justify-center bg-blue-200 px-4">

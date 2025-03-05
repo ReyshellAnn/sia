@@ -3,6 +3,9 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import { get } from 'svelte/store';
+	
+	import { user } from '$lib/stores/authStore';
 
 	import {
 		collection,
@@ -25,7 +28,6 @@
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 
-	let user: User;
 	let cartItems: any[] = [];
 	let pickupOption = 'now'; // Default selection
 	let scheduledPickupTime = ''; // Empty by default
@@ -80,33 +82,24 @@
 	const disabledTimes = getDisabledTimes();
 
 	// Ensure user is authenticated and fetch cart items after authentication
-	onMount(() => {
-		onAuthStateChanged(auth, async (currentUser) => {
-			if (!currentUser) {
-				// If no user is logged in, redirect to login page
-				goto('/login');
-				return;
-			}
+	onMount(async () => {
+	const currentUser = get(user);
+	if (!currentUser) return; // Just in case, but should never happen due to +page.ts
 
-			// Set user state after authentication
-			user = currentUser;
+	try {
+		const q = query(collection(db, 'cart'), where('userId', '==', currentUser.uid));
+		const querySnapshot = await getDocs(q);
 
-			// Fetch the user's cart items
-			try {
-				const q = query(collection(db, 'cart'), where('userId', '==', user.uid)); // Query the cart collection for this user
-				const querySnapshot = await getDocs(q);
-
-				cartItems = querySnapshot.docs.map((doc) => ({
-					id: doc.id,
-					...doc.data(),
-					imageUrl: doc.data().imageUrl || '/placeholder.png'
-				}));
-				console.log('Cart items retrieved successfully:', cartItems);
-			} catch (error) {
-				console.error('Error fetching cart items:', error);
-			}
-		});
-	});
+		cartItems = querySnapshot.docs.map((doc) => ({
+			id: doc.id,
+			...doc.data(),
+			imageUrl: doc.data().imageUrl || '/placeholder.png'
+		}));
+		console.log('Cart items retrieved successfully:', cartItems);
+	} catch (error) {
+		console.error('Error fetching cart items:', error);
+	}
+});
 
 	// Handle item quantity update
 	const updateQuantity = async (itemId: string, newQuantity: number) => {

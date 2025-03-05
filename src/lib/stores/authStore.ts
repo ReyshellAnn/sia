@@ -12,17 +12,19 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     const userDocSnap = await getDoc(userDocRef);
 
     if (userDocSnap.exists()) {
-      // Merge Firebase Auth user data with Firestore data
-      user.set({
+      const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         ...userDocSnap.data(), // Includes fullName, role, createdAt
-      });
+      };
+
+
+      user.set(userData);
     } else {
-      console.warn("No Firestore user document found for:", firebaseUser.uid);
       user.set(firebaseUser); // Fallback to auth-only data
     }
   } else {
+    console.log("🚪 User logged out.");
     user.set(null);
   }
 });

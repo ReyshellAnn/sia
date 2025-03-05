@@ -2,6 +2,9 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { onAuthStateChanged } from 'firebase/auth';
+	import { get } from 'svelte/store';
+
+	import { user } from '$lib/stores/authStore';
 
 	import { collection, getDocs, query, where } from 'firebase/firestore';
 	import { db, auth } from '$lib/firebase';
@@ -12,46 +15,37 @@
 	import XCircle from 'lucide-svelte/icons/circle-x';
 	import CheckCircle from 'lucide-svelte/icons/circle-check';
 
-	let user;
 	let pickupNotifications: any[] = [];
 
-	onMount(() => {
-		onAuthStateChanged(auth, async (currentUser) => {
-			if (!currentUser) {
-				goto('/login');
-				return;
-			}
+	onMount(async () => {
+	const currentUser = get(user);
+	if (!currentUser) return; // Should never happen due to +page.ts
 
-			user = currentUser;
+	try {
+		const q = query(
+			collection(db, 'orderhistory'),
+			where('userId', '==', currentUser.uid),
+			where('status', 'in', ['completed', 'cancelled'])
+		);
+		const querySnapshot = await getDocs(q);
 
-			// Fetch order notifications based on status
-			try {
-				// Query for orders where userId matches and status is 'cancelled' or 'completed'
-				const q = query(
-					collection(db, 'orderhistory'),
-					where('userId', '==', user.uid),
-					where('status', 'in', ['completed', 'cancelled'])
-				);
-				const querySnapshot = await getDocs(q);
-
-				// Map the fetched data to the notification structure
-				pickupNotifications = querySnapshot.docs.map((doc) => {
-					const order = doc.data();
-					return {
-						id: doc.id,
-						status: order.status,
-						createdAt: order.createdAt,
-						canceledAt: order.cancelledAt,
-						items: order.items
-					};
-				});
-
-				console.log('Pickup Notifications:', pickupNotifications);
-			} catch (error) {
-				console.error('Error fetching pickup notifications:', error);
-			}
+		// Map the fetched data to the notification structure
+		pickupNotifications = querySnapshot.docs.map((doc) => {
+			const order = doc.data();
+			return {
+				id: doc.id,
+				status: order.status,
+				createdAt: order.createdAt,
+				canceledAt: order.cancelledAt,
+				items: order.items
+			};
 		});
-	});
+
+		console.log('Pickup Notifications:', pickupNotifications);
+	} catch (error) {
+		console.error('Error fetching pickup notifications:', error);
+	}
+});
 </script>
 
 <div class="flex flex-wrap gap-12">
