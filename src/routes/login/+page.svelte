@@ -83,47 +83,63 @@
 		}
 	}
 </script>
+<header class="flex w-full items-center justify-center p-4 bg-white shadow-md lg:hidden">
+	<h1 class="text-3xl font-bold uppercase"><span class="text-orange-400">Medi</span>Quick</h1>
+</header>
 
-<div class="flex min-h-screen w-full items-center justify-center bg-orange-300 px-4 sm:px-6 md:px-8">
-	<Toaster />
-	<Card.Root class="mx-auto w-full max-w-sm sm:max-w-md md:max-w-lg">
-		<Card.Header class="text-center sm:text-left">
-			<Card.Title class="text-2xl">Login</Card.Title>
-			<Card.Description>Enter your email below to login to your account</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			<div class="grid gap-4">
-				{#if errorMessage}
-					<p class="text-sm text-red-500">{errorMessage}</p>
-				{/if}
-				<div class="grid gap-2">
-					<Label for="email">Email</Label>
-					<Input id="email" type="email" bind:value={email} placeholder="m@example.com" required class="w-full" />
-				</div>
-				<div class="grid gap-2">
-					<div class="flex items-center">
-						<Label for="password">Password</Label>
-					</div>
-					<Input id="password" type="password" bind:value={password} required class="w-full" />
-					<a href="##" class="ml-auto text-sm underline" on:click={() => showForgotPassword.set(true)}>
-						Forgot your password?
-					</a>
-				</div>
-				<Button type="submit" class="w-full bg-orange-400 hover:bg-orange-300 py-3 text-lg" onclick={login} disabled={isLoading}>
-					{#if isLoading}
-						<span>Loading...</span>
-					{:else}
-						Login
+
+<div class="flex min-h-screen w-full bg-orange-400">
+	<!-- Left Side (MediQuick Branding) - Hidden on md and smaller -->
+	<div class="hidden lg:flex w-1/2 items-center justify-center bg-white">
+		<h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold uppercase">
+			<span class="text-orange-400">Medi</span>Quick
+		</h1>
+		
+	</div>
+
+	<!-- Right Side (Login Form) -->
+	<div class="flex w-full lg:w-1/2 items-center justify-center px-4 sm:px-6 md:px-8">
+		<Toaster />
+		<Card.Root class="mx-auto w-full max-w-sm">
+			<Card.Header class="text-center">
+				<Card.Title class="text-2xl">Login</Card.Title>
+				<Card.Description>Enter your email below to login to your account</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<div class="grid gap-4">
+					{#if errorMessage}
+						<p class="text-sm text-red-500">{errorMessage}</p>
 					{/if}
-				</Button>
-			</div>
-			<div class="mt-4 text-center text-sm">
-				Don't have an account?
-				<a href="/register" class="underline"> Sign up </a>
-			</div>
-		</Card.Content>
-	</Card.Root>
+					<div class="grid gap-2">
+						<Label for="email">Email</Label>
+						<Input id="email" type="email" bind:value={email} placeholder="m@example.com" required class="w-full" />
+					</div>
+					<div class="grid gap-2">
+						<div class="flex items-center">
+							<Label for="password">Password</Label>
+						</div>
+						<Input id="password" type="password" bind:value={password} required class="w-full" />
+						<a href="##" class="ml-auto text-sm underline" on:click={() => showForgotPassword.set(true)}>
+							Forgot your password?
+						</a>
+					</div>
+					<Button type="submit" class="w-full bg-orange-400 hover:bg-orange-300 py-3 text-base" onclick={login} disabled={isLoading}>
+						{#if isLoading}
+							<span>Loading...</span>
+						{:else}
+							Login
+						{/if}
+					</Button>
+				</div>
+				<div class="mt-4 text-center text-sm">
+					Don't have an account?
+					<a href="/register" class="underline"> Sign up </a>
+				</div>
+			</Card.Content>
+		</Card.Root>
+	</div>
 </div>
+
 
 {#if $showForgotPassword}
 	<div class="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 px-4 sm:px-6">

@@ -74,48 +74,63 @@
 	}
 </script>
 
-<div class="flex h-screen w-full items-center justify-center bg-orange-300 px-4">
-	<Toaster />
-	<Card.Root class="mx-auto max-w-sm">
-		<Card.Header>
-			<Card.Title class="text-2xl">Register</Card.Title>
-			<Card.Description>Enter your details below to create an account</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			<div class="grid gap-4">
-				{#if errorMessage}
-					<p class="text-sm text-red-500">{errorMessage}</p>
-				{/if}
-				<div class="grid gap-2">
-					<Label for="full-name">Full Name</Label>
-					<Input id="full-name" type="text" bind:value={fullName} placeholder="John Doe" required />
-				</div>
-				<div class="grid gap-2">
-					<Label for="email">Email</Label>
-					<Input id="email" type="email" bind:value={email} placeholder="m@example.com" required />
-				</div>
-				<div class="grid gap-2">
-					<Label for="password">Password</Label>
-					<Input id="password" type="password" bind:value={password} required />
-				</div>
-				<div class="grid gap-2">
-					<Label for="confirm-password">Confirm Password</Label>
-					<Input id="confirm-password" type="password" bind:value={confirmPassword} required />
-				</div>
-				<!-- Google reCAPTCHA with global callback reference -->
-				<div class="g-recaptcha" data-sitekey={siteKey} data-callback="onCaptchaSuccess"></div>
-				<Button type="submit" class="w-full bg-orange-400 hover:bg-orange-300" onclick={register} disabled={isLoading}>
-					{#if isLoading}
-						<span>Loading...</span>
-					{:else}
-						Register
+<header class="flex w-full items-center justify-center p-4 bg-white shadow-md lg:hidden">
+	<h1 class="text-3xl font-bold uppercase"><span class="text-orange-400">Medi</span>Quick</h1>
+</header>
+
+<div class="flex min-h-screen w-full bg-orange-400">
+	<!-- Left Side (MediQuick Branding) - Hidden on md and smaller -->
+	<div class="hidden lg:flex w-1/2 items-center justify-center bg-white">
+		<h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold uppercase">
+			<span class="text-orange-400">Medi</span>Quick
+		</h1>
+	</div>
+
+	<!-- Right Side (Register Form) -->
+	<div class="flex w-full lg:w-1/2 items-center justify-center px-4 sm:px-6 md:px-8">
+		<Toaster />
+		<Card.Root class="mx-auto w-full max-w-sm">
+			<Card.Header class="text-center">
+				<Card.Title class="text-2xl">Register</Card.Title>
+				<Card.Description>Enter your details below to create an account</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<div class="grid gap-4">
+					{#if errorMessage}
+						<p class="text-sm text-red-500">{errorMessage}</p>
 					{/if}
-				</Button>
-			</div>
-			<div class="mt-4 text-center text-sm">
-				Already have an account?
-				<a href="/login" class="underline"> Sign in </a>
-			</div>
-		</Card.Content>
-	</Card.Root>
+					<div class="grid gap-2">
+						<Label for="full-name">Full Name</Label>
+						<Input id="full-name" type="text" bind:value={fullName} placeholder="John Doe" required />
+					</div>
+					<div class="grid gap-2">
+						<Label for="email">Email</Label>
+						<Input id="email" type="email" bind:value={email} placeholder="m@example.com" required />
+					</div>
+					<div class="grid gap-2">
+						<Label for="password">Password</Label>
+						<Input id="password" type="password" bind:value={password} required />
+					</div>
+					<div class="grid gap-2">
+						<Label for="confirm-password">Confirm Password</Label>
+						<Input id="confirm-password" type="password" bind:value={confirmPassword} required />
+					</div>
+					<!-- Google reCAPTCHA -->
+					<div class="g-recaptcha" data-sitekey={siteKey} data-callback="onCaptchaSuccess"></div>
+					<Button type="submit" class="w-full bg-orange-400 hover:bg-orange-300 py-3 text-base" onclick={register} disabled={isLoading}>
+						{#if isLoading}
+							<span>Loading...</span>
+						{:else}
+							Register
+						{/if}
+					</Button>
+				</div>
+				<div class="mt-4 text-center text-sm">
+					Already have an account?
+					<a href="/login" class="underline"> Sign in </a>
+				</div>
+			</Card.Content>
+		</Card.Root>
+	</div>
 </div>
+

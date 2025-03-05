@@ -66,10 +66,10 @@
 }
 </script>
 
-<div class="flex h-screen w-full items-center justify-center bg-blue-200 px-4">
+<div class="flex h-screen w-full items-center justify-center bg-orange-400 px-4">
 	<Card.Root class="mx-auto max-w-sm">
 		<Card.Header>
-			<Card.Title class="text-2xl">Admin Login</Card.Title>
+			<Card.Title class="text-2xl text-center">Admin Login</Card.Title>
 			<Card.Description>Enter your email below to login to your account</Card.Description>
 		</Card.Header>
 		<Card.Content>
