@@ -39,6 +39,17 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		return json({ message: "User registered successfully!" });
 	} catch (error) {
-		return json({ error: error instanceof Error ? error.message : "Registration failed" }, { status: 500 });
+		// Check if Firebase threw an error
+		let errorCode = "auth/unknown-error";
+		if (error instanceof Error) {
+			const firebaseErrorMatch = error.message.match(/\((.*?)\)/);
+			if (firebaseErrorMatch) {
+				errorCode = firebaseErrorMatch[1]; // Extracts error like "auth/weak-password"
+			}
+		}
+
+		console.error("Firebase Registration Error:", error);
+
+		return json({ error: errorCode }, { status: 400 });
 	}
 };

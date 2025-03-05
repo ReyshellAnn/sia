@@ -32,46 +32,85 @@
 		document.body.appendChild(script);
 	});
 
+	function getFriendlyErrorMessage(errorCode: string): string {
+    const errorMessages: Record<string, string> = {
+        'auth/invalid-email': 'The email format is incorrect.',
+        'auth/email-already-in-use': 'The email is already associated with another account.',
+        'auth/weak-password': 'The password is too weak and must be at least 6 characters.',
+        'auth/missing-email': 'No email was provided during registration.',
+        'auth/missing-password': 'No password was provided during registration.',
+        'auth/operation-not-allowed': 'This sign-up method is disabled. Contact support for assistance.'
+    };
+
+    return errorMessages[errorCode] || 'An unexpected error occurred. Please try again.';
+}
+
+
 	async function register() {
-		isLoading = true;
-		errorMessage = '';
+	isLoading = true;
+	errorMessage = '';
 
-		if (!fullName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
-			errorMessage = "All fields are required!";
-			isLoading = false;
-			return;
-		}
-
-		if (password !== confirmPassword) {
-			errorMessage = "Passwords do not match!";
-			isLoading = false;
-			return;
-		}
-
-		if (!captchaToken) {
-			errorMessage = "Please complete the CAPTCHA verification!";
-			isLoading = false;
-			return;
-		}
-
-		try {
-			const response = await fetch('/register', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ fullName, email, password, captchaToken })
-			});
-
-			const result = await response.json();
-			if (!response.ok) throw new Error(result.error || 'Registration failed.');
-
-			toast.success("Account created successfully!");
-			goto('/login');
-		} catch (error) {
-			toast.error(errorMessage);
-		} finally {
-			isLoading = false;
-		}
+	if (!fullName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+		toast.error("All fields are required!");
+		isLoading = false;
+		return;
 	}
+
+	if (password !== confirmPassword) {
+		toast.error("Passwords do not match!");
+		isLoading = false;
+		return;
+	}
+
+	if (!captchaToken) {
+		toast.error("Please complete the CAPTCHA verification!");
+		isLoading = false;
+		return;
+	}
+
+	try {
+		const response = await fetch('/register', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ fullName, email, password, captchaToken })
+		});
+
+		const result = await response.json();
+		if (!response.ok) throw new Error(result.error || 'Registration failed.');
+
+		toast.success("Account created successfully!");
+		goto('/login');
+	} catch (error: any) {
+    console.error("Registration error:", error);
+
+    let errorCode = "unknown";
+    let friendlyMessage = "An unexpected error occurred. Please try again.";
+
+    // If the error is from Firebase, use the error returned by the backend
+    if (error instanceof Error) {
+        errorCode = error.message; // Firebase error codes come in message field from backend
+    } else if (typeof error === "object" && error.error) {
+        errorCode = error.error; // If backend sends { error: "auth/weak-password" }
+    }
+
+    friendlyMessage = getFriendlyErrorMessage(errorCode);
+    toast.error(friendlyMessage);
+}
+
+
+
+finally {
+		isLoading = false;
+
+		 // **Reset reCAPTCHA to get a new token**
+		 grecaptcha.reset(); // 👈 This refreshes the CAPTCHA so the user gets a new token
+        captchaToken = '';
+	}
+}
+
+
+
+
 	
 </script>
 
