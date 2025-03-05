@@ -72,6 +72,7 @@
 			isLoading = false;
 		}
 	}
+	
 </script>
 
 <header class="flex w-full items-center justify-center p-4 bg-white shadow-md lg:hidden">

@@ -6,10 +6,10 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 
-	import { doc, getDoc } from "firebase/firestore";
+	import { doc, getDoc } from 'firebase/firestore';
 	import { auth, db } from '$lib/firebase'; // Firebase config file
 	import { signInWithEmailAndPassword } from 'firebase/auth';
-	
+
 	import { goto } from '$app/navigation';
 	import { Toaster, toast } from 'svelte-sonner';
 	import { writable, get } from 'svelte/store';
@@ -21,39 +21,53 @@
 	let isLoading = false; // Loading state flag
 	let showForgotPassword = writable(false);
 
-    async function login(event: Event) {
-        event.preventDefault();
-        if (isLoading) return;
-        isLoading = true;
-    
-        try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-    
-            if (!userDoc.exists()) {
-                toast.error("User not found!");
-                return;
-            }
-    
-            const userData = userDoc.data();
-            if (userData.role !== "customer") {
-                toast.error("Access denied. Only customers can log in.");
-                return;
-            }
-    
-            toast.success("Login successful!");
-            goto("/");
-        } catch (error: any) {
-            console.error("Login error:", error.code, error.message);
-            toast.error(`Login failed: ${error.message}`);
-        }
-    
-        isLoading = false;
-    }
+async function login(event: Event) {
+	event.preventDefault();
+	if (isLoading) return;
+	isLoading = true;
 
+	try {
+		const userCredential = await signInWithEmailAndPassword(auth, email, password);
+		const user = userCredential.user;
+		const userDoc = await getDoc(doc(db, 'users', user.uid));
 
+		if (!userDoc.exists()) {
+			toast.error('User not found.');
+			return;
+		}
 
+		const userData = userDoc.data();
+		if (userData.role !== 'customer') {
+			toast.error('Access denied. Only customers can log in.');
+			return;
+		}
+
+		toast.success('Login successful!');
+		goto('/');
+	} catch (error: any) {
+		console.error('Login error:', error.code, error.message);
+		const friendlyMessage = getFriendlyErrorMessage(error.code);
+		toast.error(friendlyMessage);
+	}
+
+	isLoading = false;
+}
+
+function getFriendlyErrorMessage(errorCode: string): string {
+	const errorMessages: Record<string, string> = {
+		'auth/invalid-email': 'Invalid email format. Please enter a valid email.',
+		'auth/user-not-found': 'No account found with this email.',
+		'auth/wrong-password': 'Incorrect password. Please try again.',
+		'auth/invalid-credential': 'Invalid email or password. Please check your credentials and try again.',
+		'auth/user-disabled': 'This account has been disabled. Contact support for assistance.',
+		'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
+		'auth/network-request-failed': 'Network error. Check your internet connection.',
+		'auth/requires-recent-login': 'Please log in again to continue.',
+		'auth/popup-closed-by-user': 'Login process was interrupted. Please try again.'
+	};
+
+	return errorMessages[errorCode] || 'An unexpected error occurred. Please try again.';
+}
 
 
 	async function sendResetEmail(event: Event) {
@@ -83,22 +97,21 @@
 		}
 	}
 </script>
-<header class="flex w-full items-center justify-center p-4 bg-white shadow-md lg:hidden">
+
+<header class="flex w-full items-center justify-center bg-white p-4 shadow-md lg:hidden">
 	<h1 class="text-3xl font-bold uppercase"><span class="text-orange-400">Medi</span>Quick</h1>
 </header>
 
-
 <div class="flex min-h-screen w-full bg-orange-400">
 	<!-- Left Side (MediQuick Branding) - Hidden on md and smaller -->
-	<div class="hidden lg:flex w-1/2 items-center justify-center bg-white">
-		<h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold uppercase">
+	<div class="hidden w-1/2 items-center justify-center bg-white lg:flex">
+		<h1 class="text-4xl font-bold uppercase sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl">
 			<span class="text-orange-400">Medi</span>Quick
 		</h1>
-		
 	</div>
 
 	<!-- Right Side (Login Form) -->
-	<div class="flex w-full lg:w-1/2 items-center justify-center px-4 sm:px-6 md:px-8">
+	<div class="flex w-full items-center justify-center px-4 sm:px-6 md:px-8 lg:w-1/2">
 		<Toaster />
 		<Card.Root class="mx-auto w-full max-w-sm">
 			<Card.Header class="text-center">
@@ -112,18 +125,34 @@
 					{/if}
 					<div class="grid gap-2">
 						<Label for="email">Email</Label>
-						<Input id="email" type="email" bind:value={email} placeholder="m@example.com" required class="w-full" />
+						<Input
+							id="email"
+							type="email"
+							bind:value={email}
+							placeholder="m@example.com"
+							required
+							class="w-full"
+						/>
 					</div>
 					<div class="grid gap-2">
 						<div class="flex items-center">
 							<Label for="password">Password</Label>
 						</div>
 						<Input id="password" type="password" bind:value={password} required class="w-full" />
-						<a href="##" class="ml-auto text-sm underline" on:click={() => showForgotPassword.set(true)}>
+						<a
+							href="##"
+							class="ml-auto text-sm underline"
+							on:click={() => showForgotPassword.set(true)}
+						>
 							Forgot your password?
 						</a>
 					</div>
-					<Button type="submit" class="w-full bg-orange-400 hover:bg-orange-300 py-3 text-base" onclick={login} disabled={isLoading}>
+					<Button
+						type="submit"
+						class="w-full bg-orange-400 py-3 text-base hover:bg-orange-300"
+						onclick={login}
+						disabled={isLoading}
+					>
 						{#if isLoading}
 							<span>Loading...</span>
 						{:else}
@@ -140,15 +169,23 @@
 	</div>
 </div>
 
-
 {#if $showForgotPassword}
-	<div class="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 px-4 sm:px-6">
-		<div class="w-full max-w-sm sm:max-w-md md:max-w-lg rounded-md bg-white p-6">
-			<h2 class="mb-4 text-xl text-center sm:text-left">Reset Your Password</h2>
+	<div
+		class="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 px-4 sm:px-6"
+	>
+		<div class="w-full max-w-sm rounded-md bg-white p-6 sm:max-w-md md:max-w-lg">
+			<h2 class="mb-4 text-center text-xl sm:text-left">Reset Your Password</h2>
 			<form on:submit={sendResetEmail}>
 				<div class="mb-4">
 					<Label for="reset-email">Enter your email address:</Label>
-					<Input id="reset-email" type="email" bind:value={email} placeholder="Enter your email" required class="w-full" />
+					<Input
+						id="reset-email"
+						type="email"
+						bind:value={email}
+						placeholder="Enter your email"
+						required
+						class="w-full"
+					/>
 				</div>
 				<Button type="submit" class="w-full py-3 text-lg" disabled={isLoading}>
 					{#if isLoading}
@@ -158,7 +195,10 @@
 					{/if}
 				</Button>
 			</form>
-			<button class="mt-4 w-full text-sm text-blue-600 text-center" on:click={() => showForgotPassword.set(false)}>
+			<button
+				class="mt-4 w-full text-center text-sm text-blue-600"
+				on:click={() => showForgotPassword.set(false)}
+			>
 				Cancel
 			</button>
 		</div>
