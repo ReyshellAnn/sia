@@ -7,7 +7,7 @@
 	import History from 'lucide-svelte/icons/history';
 	import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { user } from '$lib/stores/authStore'; // Import the user store
 	import { auth } from '$lib/firebase';
@@ -44,8 +44,8 @@
 	];
 	const showLoginDialog = writable(false);
 
-		// Handle clicking on Cart
-		const handleCartClick = (event: Event) => {
+	// Handle clicking on Cart
+	const handleCartClick = (event: Event) => {
 		if (!$user) {
 			event.preventDefault(); // Prevent navigation
 			showLoginDialog.set(true); // Show dialog instead
@@ -69,9 +69,7 @@
 		<Sidebar.Group>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu class="font-medium">
-					{#each items.filter(item => 
-						$user || !['Settings', 'Pending Pickups', 'Order History'].includes(item.title)
-					) as item (item.title)}
+					{#each items.filter((item) => $user || !['Settings', 'Pending Pickups', 'Order History'].includes(item.title)) as item (item.title)}
 						<Sidebar.MenuItem
 							class="transform rounded-lg border-2 border-transparent transition-all duration-200 ease-in-out hover:scale-105 hover:border-orange-400 hover:shadow-lg {$page
 								.url.pathname === item.url
@@ -85,10 +83,14 @@
 									: ''}"
 							>
 								{#snippet child({ props })}
-								<a href={item.url} {...props} on:click={item.title === 'Cart' ? handleCartClick : undefined}>
-									<item.icon class="mr-4" />
-									<span>{item.title}</span>
-								</a>
+									<a
+										href={item.url}
+										{...props}
+										on:click={item.title === 'Cart' ? handleCartClick : undefined}
+									>
+										<item.icon class="mr-4" />
+										<span>{item.title}</span>
+									</a>
 								{/snippet}
 							</Sidebar.MenuButton>
 						</Sidebar.MenuItem>
