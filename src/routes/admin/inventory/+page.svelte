@@ -175,21 +175,12 @@ const prevPage = () => {
 };
 
 
-const setPage = async (page) => {
-    if (page !== $currentPage) {
-        if (page > $currentPage) {
-            for (let i = $currentPage; i < page; i++) {
-                await fetchMedicines('next');
-            }
-        } else {
-            for (let i = $currentPage; i > page; i--) {
-                await fetchMedicines('prev');
-            }
-        }
-        currentPage.set(page);
-    }
-};
-
+	const setPage = (page: number) => {
+		if (page !== $currentPage) {
+			currentPage.set(page);
+			fetchMedicines(page > $currentPage ? 'next' : 'prev');
+		}
+	};
 
 	onMount(async () => {
 		await fetchTotalCount(); // ✅ Fetch total count once
