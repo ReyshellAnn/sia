@@ -2,8 +2,23 @@
 	import { onMount } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
+	import { writable } from 'svelte/store';
 
-	import { collection, doc, getDoc, getDocs, deleteDoc, updateDoc } from 'firebase/firestore'; // Import Firestore functions
+	import {
+		collection,
+		doc,
+		getDoc,
+		getDocs,
+		deleteDoc,
+		updateDoc,
+		query,
+		orderBy,
+		limit,
+		startAfter,
+		startAt,
+		QueryDocumentSnapshot,
+		endBefore
+	} from 'firebase/firestore'; // Import Firestore functions
 	import { db } from '$lib/firebase'; // Firebase Auth and Firestore references
 
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
@@ -23,8 +38,19 @@
 
 	const isDesktop = new MediaQuery('(min-width: 768px)');
 
-	const count = 20;
-	const perPage = $derived(isDesktop.current ? 3 : 8);
+	// Create a writable store for count
+	export const count = writable(0);
+
+	const fetchTotalCount = async () => {
+		try {
+			const totalCountQuery = await getDocs(collection(db, 'medicines'));
+			count.set(totalCountQuery.size); // ✅ Set count only once
+			totalPages.set(Math.ceil(totalCountQuery.size / perPage)); // ✅ Set total pages here
+		} catch (error) {
+			console.error('Error fetching total count:', error);
+		}
+	};
+
 	const siblingCount = $derived(isDesktop.current ? 1 : 0);
 
 	// Define a type for the medicine data
@@ -47,24 +73,118 @@
 	}
 
 	let errorMessage = $state(''); // Handle errors
-	let medicines = $state<Medicine[]>([]); // Store medicines data from Firestore
+	// svelte-ignore non_reactive_update
+	export const medicines = writable<Medicine[]>([]);
+
 	let selectedRow: Medicine | null = null; // Track the selected row
 	let isLoading = $state(false); // Loading state
 	let isDeleteDialogOpen = $state(false); // Controls the alert dialog
 	let expandedDescriptions = $state({});
 
-	// Fetch medicines on mount
-	onMount(async () => {
-		try {
-			const querySnapshot = await getDocs(collection(db, 'medicines'));
-			medicines = querySnapshot.docs.map((doc) => ({
-				id: doc.id,
-				...doc.data()
-			})) as Medicine[];
-		} catch (error) {
-			console.error('Error fetching medicines:', error);
-			errorMessage = 'An error occurred while fetching medicines.';
+	export const currentPage = writable(1);
+	export const totalPages = writable(1); // Dynamically update this based on Firestore data
+
+	let perPage = 5;
+	let lastVisible: QueryDocumentSnapshot | null = null;
+	let firstVisible: QueryDocumentSnapshot | null = null;
+	let previousPages: QueryDocumentSnapshot[] = [];
+
+	const fetchMedicines = async (direction = 'next') => {
+    console.log(`Fetching medicines: direction = ${direction}`);
+    isLoading = true;
+
+    try {
+        let q;
+
+        if (direction === 'next') {
+            q = lastVisible
+                ? query(
+                    collection(db, 'medicines'),
+                    orderBy('name'),
+                    startAfter(lastVisible),
+                    limit(perPage)
+                )
+                : query(collection(db, 'medicines'), orderBy('name'), limit(perPage));
+
+            if (firstVisible) {
+                previousPages.push(firstVisible);
+            }
+        } else if (direction === 'prev' && previousPages.length > 0) {
+            const previousLast = previousPages[previousPages.length - 1];
+
+            if (previousPages.length > 1) {
+                previousPages.pop();
+            }
+
+            q = query(
+                collection(db, 'medicines'),
+                orderBy('name'),
+                startAt(previousLast),
+                limit(perPage)
+            );
+        } else {
+            console.warn('No previous pages to go back to.');
+            return;
+        }
+
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const fetchedMedicines = querySnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data()
+            })) as Medicine[];
+
+            medicines.set(fetchedMedicines);
+
+            firstVisible = querySnapshot.docs[0];
+            lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+
+            // 🚨 Prevents exceeding available pages
+            if (fetchedMedicines.length < perPage && direction === 'next') {
+                console.warn('⚠️ No more data to fetch.');
+                return;
+            }
+        } else {
+            console.warn('⚠️ Query returned empty. Stopping pagination.');
+            return;
+        }
+    } catch (error) {
+        console.error('Error fetching medicines:', error);
+    } finally {
+        isLoading = false;
+    }
+};
+
+
+const nextPage = () => {
+    if ($currentPage < $totalPages) {
+        currentPage.update(n => n + 1);
+        fetchMedicines('next');
+    } else {
+        console.warn('⚠️ Already on the last page.');
+    }
+};
+
+const prevPage = () => {
+    if (previousPages.length > 0) {
+        currentPage.update(n => Math.max(n - 1, 1));
+        fetchMedicines('prev');
+    } else {
+        console.warn('⚠️ No previous pages available.');
+    }
+};
+
+
+	const setPage = (page: number) => {
+		if (page !== $currentPage) {
+			currentPage.set(page);
+			fetchMedicines(page > $currentPage ? 'next' : 'prev');
 		}
+	};
+
+	onMount(async () => {
+		await fetchTotalCount(); // ✅ Fetch total count once
+		fetchMedicines('next');
 	});
 
 	// Delete the selected row
@@ -94,7 +214,7 @@
 			await deleteDoc(medicineRef);
 
 			// Remove medicine from local state
-			medicines = medicines.filter((m) => m.id !== medicine.id);
+			medicines.update((current) => current.filter((m) => m.id !== medicine.id));
 
 			// Close the dialog
 			isDeleteDialogOpen = false;
@@ -166,7 +286,8 @@
 			</Table.Row>
 		</Table.Header>
 		<Table.Body>
-			{#each medicines as medicine (medicine.id)}
+			{#each $medicines as medicine (medicine.id)}
+				{console.log('Rendering medicine:', medicine)}
 				<Table.Row class="border-b transition hover:bg-gray-50">
 					<Table.Cell class="flex items-center gap-3 px-10 py-3">
 						{#if medicine.imageUrl}
@@ -263,15 +384,20 @@
 	</Table.Root>
 </div>
 
-<Pagination.Root {count} {perPage} {siblingCount} class="items-end">
-	{#snippet children({ pages, currentPage })}
+<Pagination.Root count={$count} {perPage} {siblingCount} class="items-end">
+	{#snippet children({ pages })}
 		<Pagination.Content>
 			<Pagination.Item>
-				<Pagination.PrevButton>
+				<Pagination.PrevButton 
+				onclick={() => prevPage()} 
+				disabled={$currentPage <= 1 || previousPages.length === 0}
+
+			>
 					<ChevronLeft class="size-4" />
 					<span class="hidden sm:block">Previous</span>
 				</Pagination.PrevButton>
 			</Pagination.Item>
+
 			{#each pages as page (page.key)}
 				{#if page.type === 'ellipsis'}
 					<Pagination.Item>
@@ -279,14 +405,23 @@
 					</Pagination.Item>
 				{:else}
 					<Pagination.Item>
-						<Pagination.Link {page} isActive={currentPage === page.value}>
+						<Pagination.Link
+							{page}
+							isActive={$currentPage === page.value}
+							onclick={() => setPage(page.value)}
+						>
 							{page.value}
 						</Pagination.Link>
 					</Pagination.Item>
 				{/if}
 			{/each}
+
 			<Pagination.Item>
-				<Pagination.NextButton>
+				<Pagination.NextButton 
+				onclick={() => nextPage()} 
+				disabled={$currentPage >= $totalPages || !$totalPages}
+
+			>
 					<span class="hidden sm:block">Next</span>
 					<ChevronRight class="size-4" />
 				</Pagination.NextButton>
