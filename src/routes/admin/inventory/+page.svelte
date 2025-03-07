@@ -90,90 +90,88 @@
 	let previousPages: QueryDocumentSnapshot[] = [];
 
 	const fetchMedicines = async (direction = 'next') => {
-    console.log(`Fetching medicines: direction = ${direction}`);
-    isLoading = true;
+		console.log(`Fetching medicines: direction = ${direction}`);
+		isLoading = true;
 
-    try {
-        let q;
+		try {
+			let q;
 
-        if (direction === 'next') {
-            q = lastVisible
-                ? query(
-                    collection(db, 'medicines'),
-                    orderBy('name'),
-                    startAfter(lastVisible),
-                    limit(perPage)
-                )
-                : query(collection(db, 'medicines'), orderBy('name'), limit(perPage));
+			if (direction === 'next') {
+				q = lastVisible
+					? query(
+							collection(db, 'medicines'),
+							orderBy('name'),
+							startAfter(lastVisible),
+							limit(perPage)
+						)
+					: query(collection(db, 'medicines'), orderBy('name'), limit(perPage));
 
-            if (firstVisible) {
-                previousPages.push(firstVisible);
-            }
-        } else if (direction === 'prev' && previousPages.length > 0) {
-            const previousLast = previousPages[previousPages.length - 1];
+				if (firstVisible) {
+					previousPages.push(firstVisible);
+				}
+			} else if (direction === 'prev' && previousPages.length > 0) {
+				const previousLast = previousPages[previousPages.length - 1];
 
-            if (previousPages.length > 1) {
-                previousPages.pop();
-            }
+				if (previousPages.length > 1) {
+					previousPages.pop();
+				}
 
-            q = query(
-                collection(db, 'medicines'),
-                orderBy('name'),
-                startAt(previousLast),
-                limit(perPage)
-            );
-        } else {
-            console.warn('No previous pages to go back to.');
-            return;
-        }
+				q = query(
+					collection(db, 'medicines'),
+					orderBy('name'),
+					startAt(previousLast),
+					limit(perPage)
+				);
+			} else {
+				console.warn('No previous pages to go back to.');
+				return;
+			}
 
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const fetchedMedicines = querySnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Medicine[];
+			const querySnapshot = await getDocs(q);
+			if (!querySnapshot.empty) {
+				const fetchedMedicines = querySnapshot.docs.map((doc) => ({
+					id: doc.id,
+					...doc.data()
+				})) as Medicine[];
 
-            medicines.set(fetchedMedicines);
+				medicines.set(fetchedMedicines);
 
-            firstVisible = querySnapshot.docs[0];
-            lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+				firstVisible = querySnapshot.docs[0];
+				lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
 
-            // 🚨 Prevents exceeding available pages
-            if (fetchedMedicines.length < perPage && direction === 'next') {
-                console.warn('⚠️ No more data to fetch.');
-                return;
-            }
-        } else {
-            console.warn('⚠️ Query returned empty. Stopping pagination.');
-            return;
-        }
-    } catch (error) {
-        console.error('Error fetching medicines:', error);
-    } finally {
-        isLoading = false;
-    }
-};
+				// 🚨 Prevents exceeding available pages
+				if (fetchedMedicines.length < perPage && direction === 'next') {
+					console.warn('⚠️ No more data to fetch.');
+					return;
+				}
+			} else {
+				console.warn('⚠️ Query returned empty. Stopping pagination.');
+				return;
+			}
+		} catch (error) {
+			console.error('Error fetching medicines:', error);
+		} finally {
+			isLoading = false;
+		}
+	};
 
+	const nextPage = () => {
+		if ($currentPage < $totalPages) {
+			currentPage.update((n) => n + 1);
+			fetchMedicines('next');
+		} else {
+			console.warn('⚠️ Already on the last page.');
+		}
+	};
 
-const nextPage = () => {
-    if ($currentPage < $totalPages) {
-        currentPage.update(n => n + 1);
-        fetchMedicines('next');
-    } else {
-        console.warn('⚠️ Already on the last page.');
-    }
-};
-
-const prevPage = () => {
-    if (previousPages.length > 0) {
-        currentPage.update(n => Math.max(n - 1, 1));
-        fetchMedicines('prev');
-    } else {
-        console.warn('⚠️ No previous pages available.');
-    }
-};
-
+	const prevPage = () => {
+		if (previousPages.length > 0) {
+			currentPage.update((n) => Math.max(n - 1, 1));
+			fetchMedicines('prev');
+		} else {
+			console.warn('⚠️ No previous pages available.');
+		}
+	};
 
 	const setPage = (page: number) => {
 		if (page !== $currentPage) {
@@ -384,48 +382,41 @@ const prevPage = () => {
 	</Table.Root>
 </div>
 
-<Pagination.Root count={$count} {perPage} {siblingCount} class="items-end">
-	{#snippet children({ pages })}
-		<Pagination.Content>
-			<Pagination.Item>
-				<Pagination.PrevButton 
-				onclick={() => prevPage()} 
-				disabled={$currentPage <= 1 || previousPages.length === 0}
+<Pagination.Root count={$count} {perPage} {siblingCount} class="flex items-center justify-start">
+	<Pagination.Content>
+		<!-- Page Range Display -->
+		<Pagination.Item>
+			<span class="px-4 text-sm font-medium">
+				{($currentPage - 1) * perPage + 1}-
+				{Math.min($currentPage * perPage, $count)}
+				of {$count}
+			</span>
+		</Pagination.Item>
 
-			>
-					<ChevronLeft class="size-4" />
-					<span class="hidden sm:block">Previous</span>
-				</Pagination.PrevButton>
-			</Pagination.Item>
+		<!-- Previous Button -->
+		<Pagination.Item>
+			<button 
+			onclick={() => prevPage()} 
+			disabled={$currentPage <= 1 || previousPages.length === 0}
+			class="flex items-center gap-2 px-3 py-1.5 rounded-lg 
+			disabled:opacity-50 group 
+			hover:bg-gray-200 disabled:pointer-events-none"
+ >
+			<ChevronLeft class="size-4" />
+		</button>
+		</Pagination.Item>
 
-			{#each pages as page (page.key)}
-				{#if page.type === 'ellipsis'}
-					<Pagination.Item>
-						<Pagination.Ellipsis />
-					</Pagination.Item>
-				{:else}
-					<Pagination.Item>
-						<Pagination.Link
-							{page}
-							isActive={$currentPage === page.value}
-							onclick={() => setPage(page.value)}
-						>
-							{page.value}
-						</Pagination.Link>
-					</Pagination.Item>
-				{/if}
-			{/each}
-
-			<Pagination.Item>
-				<Pagination.NextButton 
-				onclick={() => nextPage()} 
-				disabled={$currentPage >= $totalPages || !$totalPages}
-
-			>
-					<span class="hidden sm:block">Next</span>
-					<ChevronRight class="size-4" />
-				</Pagination.NextButton>
-			</Pagination.Item>
-		</Pagination.Content>
-	{/snippet}
+		<!-- Next Button -->
+		<Pagination.Item>
+			<button 
+			onclick={() => nextPage()} 
+			disabled={$currentPage >= $totalPages || !$totalPages}
+			class="flex items-center gap-2 px-3 py-1.5 rounded-lg 
+			disabled:opacity-50 group 
+			hover:bg-gray-200 disabled:pointer-events-none"
+ >
+			<ChevronRight class="size-4" />
+		</button>
+		</Pagination.Item>
+	</Pagination.Content>
 </Pagination.Root>
