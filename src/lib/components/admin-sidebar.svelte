@@ -9,6 +9,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { auth } from '$lib/firebase'; // Import Firebase Auth
+	import { goto } from '$app/navigation';
 	import { signOut } from 'firebase/auth'; // Firebase signOut method
 
 	// Menu items
@@ -40,16 +41,35 @@
 		}
 	];
 
-	// Logout function
-	async function logout() {
-		try {
-			await signOut(auth); // Sign out the user
-			console.log('User logged out successfully.');
-			window.location.href = '/admin-login'; // Redirect to the login page
-		} catch (error) {
-			console.error('Error during logout:', error);
+	const handleLogout = async () => {
+	// Step 1: Call the API route to clear the session cookie
+	console.log('Sending logout request to /api/logout...');
+	try {
+		const response = await fetch('/api/logout', {
+			method: 'POST',
+		});
+
+		const result = await response.json();
+
+		if (response.ok && result.success) {
+			console.log('Session cookie cleared successfully.');
+
+			// Step 2: Sign out from Firebase
+			console.log('Signing out from Firebase...');
+			await auth.signOut();
+
+			// Step 3: Redirect to the login page
+			console.log('Redirecting to the login page...');
+			goto('/login');
+		} else {
+			console.error('Error during logout:', result.error);
+			// Optionally show a toast error or other UI feedback here
 		}
+	} catch (error) {
+		console.error('Logout failed:', error);
+		// Optionally show a toast error or other UI feedback here
 	}
+};
 </script>
 
 <Sidebar.Root>
@@ -95,7 +115,7 @@
 		<Button
 			variant="ghost"
 			class="flex items-start justify-start rounded-lg border-2 border-transparent uppercase text-black hover:bg-transparent hover:text-orange-400"
-			onclick={logout}
+			onclick={handleLogout}
 		>
 			<LogOut class="my-auto mr-4" />
 			<span class="my-auto">Log out</span>

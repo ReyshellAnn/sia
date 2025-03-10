@@ -1,4 +1,4 @@
-<script>
+<!-- <script>
     import { db } from "$lib/firebase";
     import { collection, doc, writeBatch } from "firebase/firestore";
   
@@ -39,4 +39,4 @@
   </script>
   
   <button on:click={addMedicines}>Add 10 Medicines</button>
-  
+   -->

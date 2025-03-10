@@ -1,7 +1,8 @@
 import { writable } from 'svelte/store';
 import { auth, db } from '$lib/firebase';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { browser } from '$app/environment'; // To detect if we're in the browser environment
 
 export const user = writable<User | null | any>(null); // Allow custom fields
 
@@ -17,7 +18,6 @@ onAuthStateChanged(auth, async (firebaseUser) => {
         email: firebaseUser.email,
         ...userDocSnap.data(), // Includes fullName, role, createdAt
       };
-
 
       user.set(userData);
     } else {

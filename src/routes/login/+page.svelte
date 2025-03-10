@@ -9,6 +9,8 @@
 	import { doc, getDoc } from 'firebase/firestore';
 	import { auth, db } from '$lib/firebase'; // Firebase config file
 	import { signInWithEmailAndPassword } from 'firebase/auth';
+	import { signOut } from 'firebase/auth';
+
 
 	import { goto } from '$app/navigation';
 	import { Toaster, toast } from 'svelte-sonner';
@@ -21,37 +23,75 @@
 	let isLoading = false; // Loading state flag
 	let showForgotPassword = writable(false);
 
-async function login(event: Event) {
-	event.preventDefault();
-	if (isLoading) return;
-	isLoading = true;
+	async function login(event: Event) {
+  event.preventDefault();
+  if (isLoading) return;
+  isLoading = true;
 
-	try {
-		const userCredential = await signInWithEmailAndPassword(auth, email, password);
-		const user = userCredential.user;
-		const userDoc = await getDoc(doc(db, 'users', user.uid));
+  console.log('Login attempt started');
 
-		if (!userDoc.exists()) {
-			toast.error('User not found.');
-			return;
-		}
+  try {
+    // First, sign in using Firebase Authentication (to get the idToken)
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    console.log('User signed in:', userCredential.user);
 
-		const userData = userDoc.data();
-		if (userData.role !== 'customer') {
-			toast.error('Access denied. Only customers can log in.');
-			return;
-		}
+    // Fetch the user data from Firestore to check the role
+    const userDocRef = doc(db, "users", userCredential.user.uid);
+    const userDocSnap = await getDoc(userDocRef);
 
-		toast.success('Login successful!');
-		goto('/');
-	} catch (error: any) {
-		console.error('Login error:', error.code, error.message);
-		const friendlyMessage = getFriendlyErrorMessage(error.code);
-		toast.error(friendlyMessage);
-	}
+    if (userDocSnap.exists()) {
+      const userData = userDocSnap.data();
+      
+      // If the user is an admin, prevent login and show error
+      if (userData.role === 'admin') {
+        toast.error('Admin users are not allowed to log in here.');
+        
+        // Sign out the user immediately
+        await signOut(auth);  // Ensure this is awaited to finish before proceeding
+        return;  // Stop the login process for admins
+      }
 
-	isLoading = false;
+      // If not an admin, proceed as usual
+      const idToken = await userCredential.user.getIdToken();
+      console.log('ID Token obtained:', idToken);
+
+      // Now, call the API route to handle session creation securely
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idToken })
+      });
+
+      const result = await response.json();
+      console.log('API response:', result);
+
+      if (response.ok) {
+        // If the response is successful, redirect the user
+        toast.success('Login successful!');
+        goto('/');
+      } else {
+        // If access is denied or an error occurs
+        toast.error(result.error || 'Login failed');
+      }
+    } else {
+      toast.error('User data not found.');
+    }
+  } catch (error: any) {
+    console.error('Login error:', error.code, error.message);
+    const friendlyMessage = getFriendlyErrorMessage(error.code);
+    toast.error(friendlyMessage);
+    console.log('Error message for user:', friendlyMessage);
+  } finally {
+    // Ensure loading flag is turned off after the process finishes
+    isLoading = false;
+  }
 }
+
+
+
+
 
 function getFriendlyErrorMessage(errorCode: string): string {
 	const errorMessages: Record<string, string> = {

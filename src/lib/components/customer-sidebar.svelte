@@ -52,11 +52,37 @@
 		}
 	};
 
-	// Function to handle logout
 	const handleLogout = async () => {
-		await auth.signOut();
-		goto('/login'); // Smooth, client-side navigation
-	};
+	// Step 1: Call the API route to clear the session cookie
+	console.log('Sending logout request to /api/logout...');
+	try {
+		const response = await fetch('/api/logout', {
+			method: 'POST',
+		});
+
+		const result = await response.json();
+
+		if (response.ok && result.success) {
+			console.log('Session cookie cleared successfully.');
+
+			// Step 2: Sign out from Firebase
+			console.log('Signing out from Firebase...');
+			await auth.signOut();
+
+			// Step 3: Redirect to the login page
+			console.log('Redirecting to the login page...');
+			goto('/login');
+		} else {
+			console.error('Error during logout:', result.error);
+			// Optionally show a toast error or other UI feedback here
+		}
+	} catch (error) {
+		console.error('Logout failed:', error);
+		// Optionally show a toast error or other UI feedback here
+	}
+};
+
+
 </script>
 
 <Sidebar.Root>

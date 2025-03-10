@@ -11,6 +11,8 @@
 	import { doc, getDoc } from 'firebase/firestore';
 	import { db } from '$lib/firebase'; // Firestore reference
 
+	import { Toaster, toast } from 'svelte-sonner';
+
 	import { user } from '$lib/stores/authStore'; // Import the auth store
 
 	let email = '';
@@ -19,54 +21,72 @@
 	let isLoading = false; // Loading state flag
 
 	async function login(event: Event) {
-	event.preventDefault();
-	isLoading = true; // Set loading state to true
+    event.preventDefault();
+    if (isLoading) return; // Prevent submitting multiple times
+    isLoading = true; // Set loading state to true
 
-	try {
-		// Sign in with Firebase Auth
-		const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    console.log('Login attempt started');
 
-		// ✅ Use a different name for the Firebase user
-		const firebaseUser = userCredential.user;
-		const userDocRef = doc(db, 'users', firebaseUser.uid);
-		const userDoc = await getDoc(userDocRef);
+    try {
+      // Sign in with Firebase Authentication to get the idToken
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('User signed in:', userCredential.user);
 
-		if (userDoc.exists()) {
-			const userData = userDoc.data();
-			if (userData?.role === 'admin') {
-				console.log('User is an admin. Redirecting to admin page.');
+      // Fetch user data from Firestore to check the role
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const userDocSnap = await getDoc(userDocRef);
 
-				// ✅ Update the Svelte store with user info
-				user.set({
-					uid: firebaseUser.uid,
-					email: firebaseUser.email,
-					...userData
-				});
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
 
-				// ✅ Use SvelteKit navigation instead of window.location
-				import('$app/navigation').then(({ goto }) => goto('/admin'));
-			} else {
-				errorMessage = 'You do not have permission to access this page.';
-				console.error('User is not an admin.');
-			}
-		} else {
-			errorMessage = 'User data not found. Please contact support.';
-			console.error('User document not found in Firestore.');
-		}
-	} catch (error) {
-		if (error instanceof Error) {
-			errorMessage = error.message; // Display the error message
-		} else {
-			errorMessage = 'An unexpected error occurred.';
-		}
-		console.error('Login error:', error);
-	} finally {
-		isLoading = false; // Reset loading state
-	}
-}
+        // Check if the user is an admin
+        if (userData.role !== 'admin') {
+          // If the user is not an admin, reject the login attempt
+          errorMessage = 'Only admin users are allowed to log in here.';
+          console.log('User is not an admin. Login prevented.');
+          await auth.signOut(); // Sign out the user immediately
+          return;
+        }
+
+        // If the user is an admin, proceed with the login process
+        const idToken = await userCredential.user.getIdToken();
+        console.log('ID Token obtained:', idToken);
+
+        // Call the API to create a session securely
+        const response = await fetch('/api/admin-login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ idToken }),
+        });
+
+        const result = await response.json();
+        console.log('API response:', result);
+
+        if (response.ok) {
+          // Successful login response, proceed to the admin dashboard
+          toast.success('Login successful!');
+          import('$app/navigation').then(({ goto }) => goto('/admin')); // Redirect to admin dashboard
+        } else {
+          // Handle login failure
+          errorMessage = result.error || 'Login failed';
+          toast.error(errorMessage);
+        }
+      } else {
+        errorMessage = 'User data not found. Please contact support.';
+        console.error('User document not found in Firestore.');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error.code, error.message);
+    } finally {
+      isLoading = false; // Reset loading state
+    }
+  }
 </script>
 
 <div class="flex h-screen w-full items-center justify-center bg-orange-400 px-4">
+	<Toaster />
 	<Card.Root class="mx-auto max-w-sm">
 		<Card.Header>
 			<Card.Title class="text-2xl text-center">Admin Login</Card.Title>
