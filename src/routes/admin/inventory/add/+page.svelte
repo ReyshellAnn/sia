@@ -3,7 +3,7 @@
 	import { categoriesStore } from '$lib/stores/categories'; // Import the shared store
 	import { toast } from 'svelte-sonner';
 
-	import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore'; // Import Firestore functions
+	import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore'; // Import Firestore functions
 	import { auth, db } from '$lib/firebase'; // Firebase Auth and Firestore references
 	import { onAuthStateChanged } from 'firebase/auth'; // Firebase Auth state
 
@@ -180,7 +180,8 @@
 				expirationDate,
 				prescriptionRequired,
 				productCode,
-				visibleToCustomers
+				visibleToCustomers,
+				createdAt: serverTimestamp(), 
 			};
 
 			const newDocRef = doc(collection(db, 'medicines'));

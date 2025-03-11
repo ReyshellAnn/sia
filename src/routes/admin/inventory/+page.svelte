@@ -100,11 +100,11 @@
 				q = lastVisible
 					? query(
 							collection(db, 'medicines'),
-							orderBy('name'),
+							orderBy('createdAt', 'desc'), 
 							startAfter(lastVisible),
 							limit(perPage)
 						)
-					: query(collection(db, 'medicines'), orderBy('name'), limit(perPage));
+					: query(collection(db, 'medicines'), orderBy('createdAt', 'desc'), limit(perPage));
 
 				if (firstVisible) {
 					previousPages.push(firstVisible);
@@ -118,7 +118,7 @@
 
 				q = query(
 					collection(db, 'medicines'),
-					orderBy('name'),
+					orderBy('createdAt', 'desc'),
 					startAt(previousLast),
 					limit(perPage)
 				);
