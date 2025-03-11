@@ -100,7 +100,7 @@
 				q = lastVisible
 					? query(
 							collection(db, 'medicines'),
-							orderBy('createdAt', 'desc'), 
+							orderBy('createdAt', 'desc'),
 							startAfter(lastVisible),
 							limit(perPage)
 						)
@@ -395,28 +395,28 @@
 
 		<!-- Previous Button -->
 		<Pagination.Item>
-			<button 
-			onclick={() => prevPage()} 
-			disabled={$currentPage <= 1 || previousPages.length === 0}
-			class="flex items-center gap-2 px-3 py-1.5 rounded-lg 
-			disabled:opacity-50 group 
-			hover:bg-gray-200 disabled:pointer-events-none"
- >
-			<ChevronLeft class="size-4" />
-		</button>
+			<button
+				onclick={() => prevPage()}
+				disabled={$currentPage <= 1 || previousPages.length === 0}
+				class="group flex items-center gap-2 rounded-lg px-3
+			py-1.5 hover:bg-gray-200
+			disabled:pointer-events-none disabled:opacity-50"
+			>
+				<ChevronLeft class="size-4" />
+			</button>
 		</Pagination.Item>
 
 		<!-- Next Button -->
 		<Pagination.Item>
-			<button 
-			onclick={() => nextPage()} 
-			disabled={$currentPage >= $totalPages || !$totalPages}
-			class="flex items-center gap-2 px-3 py-1.5 rounded-lg 
-			disabled:opacity-50 group 
-			hover:bg-gray-200 disabled:pointer-events-none"
- >
-			<ChevronRight class="size-4" />
-		</button>
+			<button
+				onclick={() => nextPage()}
+				disabled={$currentPage >= $totalPages || !$totalPages}
+				class="group flex items-center gap-2 rounded-lg px-3
+			py-1.5 hover:bg-gray-200
+			disabled:pointer-events-none disabled:opacity-50"
+			>
+				<ChevronRight class="size-4" />
+			</button>
 		</Pagination.Item>
 	</Pagination.Content>
 </Pagination.Root>

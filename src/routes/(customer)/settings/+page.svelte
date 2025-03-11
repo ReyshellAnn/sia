@@ -185,7 +185,7 @@
 <div class="flex items-center justify-center">
 	<Toaster />
 	<div
-		class="mx-auto flex h-[550px] w-full max-w-4xl flex-col rounded-xl bg-white p-6 shadow-lg sm:flex-row sm:space-x-8 lg:p-0 lg:pr-6"
+		class="mx-auto flex h-[600px] w-full max-w-6xl flex-col rounded-xl bg-white p-6 shadow-lg sm:flex-row sm:space-x-8 lg:p-0 lg:pr-6"
 	>
 		<!-- Left Column: Tabs Navigation -->
 		<Tabs.Root bind:value={activeTab} class="flex w-full flex-col lg:flex-row">

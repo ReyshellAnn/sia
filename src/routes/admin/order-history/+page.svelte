@@ -14,9 +14,7 @@
 		doc,
 		getDoc,
 		Timestamp,
-
 		QueryDocumentSnapshot
-
 	} from 'firebase/firestore';
 	import { db } from '$lib/firebase';
 	import * as Pagination from '$lib/components/ui/pagination/index.js';
@@ -120,12 +118,12 @@
 
 					// Convert Firestore timestamps to readable dates
 					const createdAt = data.createdAt
-  ? typeof data.createdAt === 'string'
-    ? new Date(data.createdAt).toLocaleString()  // ✅ Handle ISO string
-    : data.createdAt instanceof Timestamp
-      ? data.createdAt.toDate().toLocaleString() // ✅ Handle Firestore Timestamp
-      : 'N/A'
-  : 'N/A';
+						? typeof data.createdAt === 'string'
+							? new Date(data.createdAt).toLocaleString() // ✅ Handle ISO string
+							: data.createdAt instanceof Timestamp
+								? data.createdAt.toDate().toLocaleString() // ✅ Handle Firestore Timestamp
+								: 'N/A'
+						: 'N/A';
 					const completedAt =
 						data.completedAt instanceof Timestamp
 							? data.completedAt.toDate().toLocaleString()
