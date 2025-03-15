@@ -185,7 +185,7 @@
 </script>
 
 <!-- Filter UI -->
-<div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+<div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-2">
 	<select
 		bind:value={selectedCategory}
 		on:change={filterMedicines}
@@ -218,7 +218,7 @@
 <!-- Medicine Cards -->
 <div class="flex flex-wrap justify-center sm:justify-start">
 	{#each filteredMedicines as medicine}
-		<Card.Root class="flex w-60 flex-col overflow-hidden rounded-none border-none bg-white">
+		<Card.Root class="flex w-80 md:w-60 flex-col overflow-hidden rounded-none border-none bg-white">
 			<Card.Content
 				class="mx-auto flex items-center justify-center p-2 transition duration-200 hover:cursor-pointer"
 				onclick={() => goToMedicine(medicine.id)}

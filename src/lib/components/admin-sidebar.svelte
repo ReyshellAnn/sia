@@ -34,11 +34,11 @@
 			url: '/admin/statistics',
 			icon: ChartColumnBig
 		},
-		{
-			title: 'test',
-			url: '/admin/test',
-			icon: ChartColumnBig
-		}
+		// {
+		// 	title: 'test',
+		// 	url: '/admin/test',
+		// 	icon: ChartColumnBig
+		// }
 	];
 
 	const handleLogout = async () => {

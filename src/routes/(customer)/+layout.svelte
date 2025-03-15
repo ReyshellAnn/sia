@@ -23,14 +23,15 @@
 	import { auth } from '$lib/firebase';
 
 	let isMobile = $state(false);
+	// svelte-ignore non_reactive_update
 	let searchQuery = '';
 
-const goToSearchPage = () => {
-  if (searchQuery.trim()) {
-	// Ensure the query is trimmed and only navigate when it's non-empty
-	goto(`/search?query=${encodeURIComponent(searchQuery.trim())}`);
-  }
-};
+	const goToSearchPage = () => {
+		if (searchQuery.trim()) {
+			// Ensure the query is trimmed and only navigate when it's non-empty
+			goto(`/search?query=${encodeURIComponent(searchQuery.trim())}`);
+		}
+	};
 
 	onMount(() => {
 		if (!browser) return; // Prevent execution on the server
@@ -105,16 +106,17 @@ const goToSearchPage = () => {
 			{$hasScrolled ? 'border-b border-gray-100 shadow-lg' : ''}"
 		>
 			<Sidebar.Trigger class="-ml-1" />
+			<!-- svelte-ignore event_directive_deprecated -->
 			<form on:submit|preventDefault={() => goToSearchPage()}>
 				<input
-				  type="text"
-				  placeholder="Search medicine..."
-				  bind:value={searchQuery}
-				  class="w-full rounded-md border p-2 sm:max-w-xs"
+					type="text"
+					placeholder="Search medicine..."
+					bind:value={searchQuery}
+					class="w-full rounded-md border p-2 sm:max-w-xs"
 				/>
 				<Button type="submit" class="hidden">Search</Button>
 				<!-- Hidden submit button for accessibility -->
-			  </form>
+			</form>
 
 			<div class="ml-auto flex items-center gap-6">
 				{#if $user}
@@ -238,7 +240,7 @@ const goToSearchPage = () => {
 			</div>
 		</header>
 
-		<div class="flex flex-1 flex-col gap-4 overflow-auto p-4">
+		<div class="flex flex-1 flex-col gap-4 overflow-auto p-0 md:p-4">
 			<Toaster />
 			{@render children?.()}
 		</div>
