@@ -10,7 +10,7 @@
 	import { onAuthStateChanged } from 'firebase/auth';
 
 	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 
 	import Star from 'lucide-svelte/icons/star';
@@ -23,9 +23,16 @@
 
 	let searchQuery = '';
 	let selectedCategory = '';
+	let priceSort: string = '';
+
 
 	let categories: string[] = [];
 
+	const goToSearchPage = () => {
+		if (searchQuery) {
+			goto(`/search?query=${encodeURIComponent(searchQuery)}`);
+		}
+	};
 
 	const showLoginDialog = writable(false);
 
@@ -97,6 +104,13 @@
 			const matchesCategory = selectedCategory ? med.category === selectedCategory : true;
 			return matchesSearch && matchesCategory;
 		});
+
+		// Sort by price if priceSort is set
+		if (priceSort === 'ascending') {
+			filteredMedicines = filteredMedicines.sort((a, b) => a.price - b.price);
+		} else if (priceSort === 'descending') {
+			filteredMedicines = filteredMedicines.sort((a, b) => b.price - a.price);
+		}
 	};
 
 	const goToMedicine = (id: string) => {
@@ -105,10 +119,9 @@
 
 	const addToCart = async (medicine: any) => {
 		if (!user) {
-        showLoginDialog.set(true); // Show login dialog instead of redirecting
-        return;
-    	}
-
+			showLoginDialog.set(true); // Show login dialog instead of redirecting
+			return;
+		}
 
 		loading = { ...loading, [medicine.id]: true }; // Mark button as loading
 
@@ -171,19 +184,11 @@
 	};
 </script>
 
-<!-- Search and Filter UI -->
+<!-- Filter UI -->
 <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-	<input
-		type="text"
-		placeholder="Search medicine..."
-		bind:value={searchQuery}
-		on:input={filterMedicines}
-		class="w-full rounded-md border p-2 sm:max-w-xs"
-	/>
-
-	<select 
-		bind:value={selectedCategory} 
-		on:change={filterMedicines} 
+	<select
+		bind:value={selectedCategory}
+		on:change={filterMedicines}
 		class="w-full rounded-md border p-2 sm:w-auto"
 	>
 		<option value="">All Categories</option>
@@ -197,8 +202,18 @@
 		<option value="Heart Health">Heart Health</option>
 		<option value="Women's Health">Women's Health</option>
 	</select>
-</div>
 
+	<!-- Price Filter with Placeholder -->
+	<select
+		bind:value={priceSort}
+		on:change={filterMedicines}
+		class="w-full rounded-md border p-2 sm:w-auto"
+	>
+		<option value="">Sort by Price</option>
+		<option value="ascending">Price: Low to High</option>
+		<option value="descending">Price: High to Low</option>
+	</select>
+</div>
 
 <!-- Medicine Cards -->
 <div class="flex flex-wrap justify-center sm:justify-start">
@@ -244,10 +259,9 @@
 							: medicine.price}</span
 					>
 					<div class="flex flex-row justify-between">
-						<span class="text-sm font-sm text-gray-500">
+						<span class="font-sm text-sm text-gray-500">
 							{medicine.sold > 0 ? `${medicine.sold} Sold` : ''}
-						  </span>
-						  
+						</span>
 
 						<Button
 							class=" h-8 bg-green-600 hover:bg-green-700"
@@ -270,16 +284,16 @@
 </div>
 
 {#if $showLoginDialog}
-<Dialog.Root bind:open={$showLoginDialog}>
-	<Dialog.Content class="sm:max-w-[400px]">
-		<Dialog.Header>
-			<Dialog.Title>Login Required</Dialog.Title>
-			<Dialog.Description>You need to be logged in to add to cart.</Dialog.Description>
-		</Dialog.Header>
-		<Dialog.Footer class="flex justify-end gap-4">
-			<Button variant="outline" onclick={() => showLoginDialog.set(false)}>Cancel</Button>
-			<Button onclick={() => goto('/login')}>Login</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>
+	<Dialog.Root bind:open={$showLoginDialog}>
+		<Dialog.Content class="sm:max-w-[400px]">
+			<Dialog.Header>
+				<Dialog.Title>Login Required</Dialog.Title>
+				<Dialog.Description>You need to be logged in to add to cart.</Dialog.Description>
+			</Dialog.Header>
+			<Dialog.Footer class="flex justify-end gap-4">
+				<Button variant="outline" onclick={() => showLoginDialog.set(false)}>Cancel</Button>
+				<Button onclick={() => goto('/login')}>Login</Button>
+			</Dialog.Footer>
+		</Dialog.Content>
+	</Dialog.Root>
 {/if}

@@ -7,7 +7,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
-	import * as Popover from "$lib/components/ui/popover/index.js";
+	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { goto } from '$app/navigation';
 	import { Toaster } from 'svelte-sonner';
 
@@ -23,36 +23,64 @@
 	import { auth } from '$lib/firebase';
 
 	let isMobile = $state(false);
+	let searchQuery = '';
+
+const goToSearchPage = () => {
+  if (searchQuery.trim()) {
+	// Ensure the query is trimmed and only navigate when it's non-empty
+	goto(`/search?query=${encodeURIComponent(searchQuery.trim())}`);
+  }
+};
 
 	onMount(() => {
-    if (!browser) return; // Prevent execution on the server
+		if (!browser) return; // Prevent execution on the server
 
-    // Screen size detection
-    const mediaQuery = window.matchMedia("(max-width: 768px)");
-    isMobile = mediaQuery.matches;
+		// Screen size detection
+		const mediaQuery = window.matchMedia('(max-width: 768px)');
+		isMobile = mediaQuery.matches;
 
-    const updateSize = (event: MediaQueryListEvent) => {
-        isMobile = event.matches;
-    };
+		const updateSize = (event: MediaQueryListEvent) => {
+			isMobile = event.matches;
+		};
 
-    mediaQuery.addEventListener("change", updateSize);
+		mediaQuery.addEventListener('change', updateSize);
 
-    // Scroll event listener
-    window.addEventListener("scroll", handleScroll);
+		// Scroll event listener
+		window.addEventListener('scroll', handleScroll);
 
-    // Cleanup function
-    return () => {
-        mediaQuery.removeEventListener("change", updateSize);
-        window.removeEventListener("scroll", handleScroll);
-    };
-});
-
+		// Cleanup function
+		return () => {
+			mediaQuery.removeEventListener('change', updateSize);
+			window.removeEventListener('scroll', handleScroll);
+		};
+	});
 
 	let { children } = $props();
 
 	const handleLogout = async () => {
-		await auth.signOut();
-		goto('/login'); // Smooth, client-side navigation
+		// Step 1: Call the API route to clear the session cookie
+		console.log('Sending logout request to /api/logout...');
+		try {
+			const response = await fetch('/api/logout', {
+				method: 'POST'
+			});
+
+			const result = await response.json();
+
+			if (response.ok && result.success) {
+				console.log('Session cookie cleared successfully.');
+
+				// Step 2: Sign out from Firebase
+				console.log('Signing out from Firebase...');
+				await auth.signOut();
+			} else {
+				console.error('Error during logout:', result.error);
+				// Optionally show a toast error or other UI feedback here
+			}
+		} catch (error) {
+			console.error('Logout failed:', error);
+			// Optionally show a toast error or other UI feedback here
+		}
 	};
 
 	import { onMount, onDestroy } from 'svelte';
@@ -69,7 +97,7 @@
 	import { browser } from '$app/environment';
 </script>
 
-<Sidebar.Provider>
+<Sidebar.Provider style="--sidebar-width-mobile: 6rem;">
 	<CustomerSidebar />
 	<Sidebar.Inset class="bg-primary-foreground">
 		<header
@@ -77,6 +105,16 @@
 			{$hasScrolled ? 'border-b border-gray-100 shadow-lg' : ''}"
 		>
 			<Sidebar.Trigger class="-ml-1" />
+			<form on:submit|preventDefault={() => goToSearchPage()}>
+				<input
+				  type="text"
+				  placeholder="Search medicine..."
+				  bind:value={searchQuery}
+				  class="w-full rounded-md border p-2 sm:max-w-xs"
+				/>
+				<Button type="submit" class="hidden">Search</Button>
+				<!-- Hidden submit button for accessibility -->
+			  </form>
 
 			<div class="ml-auto flex items-center gap-6">
 				{#if $user}
@@ -130,7 +168,7 @@
 						</Popover.Trigger>
 						<Popover.Content
 							align="end"
-							class="w-full max-w-xs flex flex-col rounded-lg bg-white p-4 shadow-xl"
+							class="flex w-full max-w-xs flex-col rounded-lg bg-white p-4 shadow-xl"
 						>
 							{#if $user}
 								<span class="p-2 pt-4 text-center text-sm font-medium">Hi, {$user.fullName}</span>

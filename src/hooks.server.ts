@@ -81,7 +81,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   // If the user is already logged in and trying to access login or register pages, redirect to the home page
-  const authRoutes = ['/login', '/register', '/', '/medicine'];
+  const authRoutes = ['/login', '/register'];
   
   if (authRoutes.includes(path) && event.locals.user) {
     console.log('User already logged in, redirecting from login or register...');
