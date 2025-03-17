@@ -36,6 +36,9 @@
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import Pencil from 'lucide-svelte/icons/pencil';
 
+	export const searchQuery = writable('');
+	export const filteredMedicines = writable<Medicine[]>([]);
+
 	const isDesktop = new MediaQuery('(min-width: 768px)');
 
 	// Create a writable store for count
@@ -135,6 +138,7 @@
 				})) as Medicine[];
 
 				medicines.set(fetchedMedicines);
+				filteredMedicines.set(fetchedMedicines); // ✅ Also set filteredMedicines
 
 				firstVisible = querySnapshot.docs[0];
 				lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
@@ -245,6 +249,59 @@
 		selectedRow = medicine;
 		isDeleteDialogOpen = true;
 	};
+
+	const fetchAllMedicines = async (searchTerm: string) => {
+		console.log(`Fetching all medicines for search: ${searchTerm}`);
+		isLoading = true;
+
+		try {
+			const q = query(collection(db, 'medicines'), orderBy('name')); // Adjust order field if needed
+			const querySnapshot = await getDocs(q);
+
+			if (!querySnapshot.empty) {
+				const allMedicines = querySnapshot.docs.map((doc) => ({
+					id: doc.id,
+					...doc.data()
+				})) as Medicine[];
+
+				// Filter based on the search term
+				const filtered = allMedicines.filter(
+					(medicine) =>
+						medicine.name.toLowerCase().includes(searchTerm) ||
+						medicine.generic.toLowerCase().includes(searchTerm) ||
+						medicine.brand.toLowerCase().includes(searchTerm)
+				);
+
+				filteredMedicines.set(filtered);
+			} else {
+				filteredMedicines.set([]);
+			}
+		} catch (error) {
+			console.error('Error fetching all medicines:', error);
+		} finally {
+			isLoading = false;
+		}
+	};
+
+	const filterMedicines = () => {
+		let query = $searchQuery.toLowerCase();
+
+		if (query) {
+			fetchAllMedicines(query); // Fetch all medicines when searching
+		} else {
+			filteredMedicines.set($medicines); // Use paginated medicines when no search
+		}
+	};
+
+	// Ensure it updates when `medicines` change
+	medicines.subscribe(() => {
+		filterMedicines(); // ✅ Automatically update filtered list when medicines change
+	});
+
+	// Run filtering whenever search query changes
+	searchQuery.subscribe(() => {
+		filterMedicines();
+	});
 </script>
 
 <header
@@ -257,7 +314,9 @@
 			type="search"
 			placeholder="Search Medicine"
 			class="w-[200px] rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-[250px]"
+			bind:value={$searchQuery}
 		/>
+
 		<Button
 			href="/admin/inventory/add"
 			class="flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
@@ -284,7 +343,7 @@
 			</Table.Row>
 		</Table.Header>
 		<Table.Body>
-			{#each $medicines as medicine (medicine.id)}
+			{#each $filteredMedicines as medicine (medicine.id)}
 				{console.log('Rendering medicine:', medicine)}
 				<Table.Row class="border-b transition hover:bg-gray-50">
 					<Table.Cell class="flex items-center gap-3 px-10 py-3">

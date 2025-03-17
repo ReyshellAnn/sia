@@ -231,7 +231,7 @@
 		<Table.Header>
 			<Table.Row>
 				<Table.Head class="p-4 text-left font-semibold">Medicines</Table.Head>
-				<Table.Head class="p-4 text-left font-semibold">Price</Table.Head>
+				<Table.Head class="hidden p-4 text-left font-semibold md:table-cell">Price</Table.Head>
 				<Table.Head class="hidden p-4 text-left font-semibold md:table-cell">Quantity</Table.Head>
 				<Table.Head class="p-4 text-left font-semibold">Status</Table.Head>
 				<Table.Head class="hidden p-4 text-left font-semibold md:table-cell">Date</Table.Head>
@@ -256,7 +256,7 @@
 	
 				<!-- Price Column -->
 				{#each order.items as item}
-					<Table.Cell class="p-4 text-gray-700">₱{item.price.toFixed(2)}</Table.Cell>
+					<Table.Cell class="hidden p-4 text-gray-700 md:table-cell">₱{item.price.toFixed(2)}</Table.Cell>
 	
 					<!-- Quantity Column -->
 					<Table.Cell class="hidden p-4 text-gray-700 md:table-cell">{item.quantity}</Table.Cell>

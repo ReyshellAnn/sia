@@ -167,7 +167,9 @@
 					<Card.Content class="space-y-4 p-4">
 						<div class="flex items-center justify-between">
 							<div class="flex flex-col">
-								<span class="text-sm font-medium text-gray-800">{pickupItem.fullName}</span>
+								<span class="text-sm font-normal text-gray-800">Order ID:</span>
+								<span class="text-sm font-medium text-gray-800">#{pickupItem.id.replace("pickup_", "")}</span>
+								<span class="text-xs font-normal text-gray-500">{pickupItem.fullName}</span>
 								<span class="text-xs text-gray-500"
 									>Pickup Time: {pickupItem.pickupTime || 'N/A'}</span
 								>

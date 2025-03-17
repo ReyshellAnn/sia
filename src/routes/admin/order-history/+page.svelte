@@ -203,8 +203,8 @@
 	});
 </script>
 
-<header class="flex items-center justify-between rounded-lg bg-blue-50/50 px-6 py-4 shadow-md">
-	<h1 class="text-2xl font-bold text-gray-800">📜 Order History</h1>
+<header class="flex items-center justify-between rounded-lg bg-white px-6 py-4 shadow-md">
+	<h1 class="text-2xl font-semibold text-gray-800">📜 Order History</h1>
 </header>
 
 <div class="overflow-x-auto p-6">
@@ -229,7 +229,7 @@
 		<Table.Body>
 			{#each $orders as order (order.id)}
 				<Table.Row
-					class="transition-all duration-300 odd:bg-white/50 even:bg-gray-100/50 hover:bg-blue-100/50"
+					class="transition-all duration-300 odd:bg-white/50 even:bg-gray-100/50 hover:bg-orange-100/50"
 				>
 					<Table.Cell class="p-4 font-medium text-gray-900">{order.fullName}</Table.Cell>
 
