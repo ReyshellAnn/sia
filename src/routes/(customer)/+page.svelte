@@ -218,29 +218,30 @@
 <!-- Medicine Cards -->
 <div class="flex flex-wrap justify-center sm:justify-start">
 	{#each filteredMedicines as medicine}
-		<Card.Root class="flex w-80 md:w-60 flex-col overflow-hidden rounded-none border-none bg-white">
+	<Card.Root class="flex w-80 md:w-60 flex-col overflow-hidden border-b-1 border-b-gray-100 border-solid bg-primary-foreground p-4 rounded-none border-l-0 border-r-0">
+
 			<Card.Content
-				class="mx-auto flex items-center justify-center p-2 transition duration-200 hover:cursor-pointer"
+				class="mx-auto flex items-center justify-center p-0 transition duration-200 hover:cursor-pointer"
 				onclick={() => goToMedicine(medicine.id)}
 			>
-				<img
-					src={medicine.image}
-					alt="Medicine"
-					class="h-52 w-full rounded-t-lg object-cover p-2 transition duration-200 group-hover:opacity-80"
-				/>
+			<img
+			src={medicine.image}
+			alt="Medicine"
+			class="w-full rounded-t-lg object-contain transition duration-200 group-hover:opacity-80"
+		  />
+		  
 			</Card.Content>
 
-			<div class="flex flex-grow flex-col space-y-4 p-3">
+			<div class="flex flex-grow flex-col space-y-4 px-3">
 				<!-- Fixed height for the medicine name -->
-				<div class="min-h-[60px]">
+				<div class="min-h-[60px] flex-grow">
 					<span class="text-sm font-normal">
 						<span class="font-semibold uppercase">{medicine.brand}</span>
-						{medicine.generic}
-						{medicine.dosage}
-						{medicine.form}
+						{medicine.generic} {medicine.dosage} {medicine.form}
 					</span>
 				</div>
-
+			
+				<!-- Rating Stars -->
 				<div class="flex items-center gap-1">
 					{#each Array(5) as _, i}
 						<Star
@@ -248,23 +249,23 @@
 							class={i < Math.round(medicine.averageRating) ? 'text-yellow-400' : 'text-gray-300'}
 						/>
 					{/each}
-					<span class="text-xs text-gray-500">({medicine.totalReviews})</span>
+					<span class="text-gray-500 text-[10px]">({medicine.totalReviews})</span>
 				</div>
-
-				<!-- Fixed height for price & sold count -->
-				<div class="flex min-h-[30px] flex-col justify-center">
-					<span class="text-lg font-medium text-gray-600"
-						><span class="font-normal">₱</span>{medicine.price % 1 === 0
-							? `${medicine.price}.00`
-							: medicine.price}</span
-					>
-					<div class="flex flex-row justify-between">
-						<span class="font-sm text-sm text-gray-500">
+			
+				<!-- Ensuring Price & "Add to Cart" Aligns Properly -->
+				<div class="flex flex-col flex-grow justify-between">
+					<span class="text-lg font-medium text-gray-600">
+						<span class="font-normal">₱</span>
+						{medicine.price % 1 === 0 ? `${medicine.price}.00` : medicine.price}
+					</span>
+			
+					<div class="flex flex-row justify-between items-end">
+						<span class="text-sm text-gray-500">
 							{medicine.sold > 0 ? `${medicine.sold} Sold` : ''}
 						</span>
-
+			
 						<Button
-							class=" h-8 bg-green-600 hover:bg-green-700"
+							class="h-8 bg-orange-400 hover:bg-orange-300"
 							onclick={() => addToCart(medicine)}
 							disabled={loading[medicine.id]}
 						>
@@ -279,6 +280,7 @@
 					</div>
 				</div>
 			</div>
+			
 		</Card.Root>
 	{/each}
 </div>

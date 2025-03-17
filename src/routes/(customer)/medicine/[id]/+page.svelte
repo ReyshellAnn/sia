@@ -319,7 +319,7 @@
 </script>
 
 {#if medicine}
-<div class="max-w-80 sm:max-w-full md:max-w-full">
+<div class="max-w-80 mx-auto sm:max-w-full md:max-w-full">
 
 		<div class="flex max-w-full flex-col gap-6 sm:flex-row">
 			<Card.Root class="w-full rounded-lg border-none shadow-xl sm:flex-1">
@@ -327,7 +327,7 @@
 					<img
 						src={medicine.imageUrl || '/placeholder.png'}
 						alt={medicine.name}
-						class="h-auto w-full max-w-[250px] rounded-lg object-contain"
+						class="w-full max-w-[250px] rounded-lg object-contain"
 					/>
 
 					<div class="hidden w-full rounded-lg bg-white p-6 shadow-lg sm:block">
@@ -885,7 +885,7 @@
 										<img
 											src={medicine.imageUrl}
 											alt="Medicine"
-											class="h-48 w-48 rounded-md object-cover sm:h-56 sm:w-56 md:h-64 md:w-64"
+											class="w-48 rounded-md object-contain sm:h-56 sm:w-56 md:h-64 md:w-64"
 										/>
 									</Card.Content>
 									<Card.Footer class="flex flex-col items-start space-y-2 p-4">
