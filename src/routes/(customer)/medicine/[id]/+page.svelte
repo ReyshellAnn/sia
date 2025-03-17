@@ -125,7 +125,11 @@
 				id: doc.id,
 				name: doc.data().name,
 				price: doc.data().price,
-				imageUrl: doc.data().imageUrl || '/placeholder.png'
+				imageUrl: doc.data().imageUrl || '/placeholder.png',
+				brand: doc.data().brand || 'Unknown Brand',
+				generic: doc.data().generic || 'Unknown Generic',
+				dosage: doc.data().dosage || 'No Dosage Info',
+				form: doc.data().form || 'No Form Info'
 			}));
 		} catch (error) {
 			console.error('Error fetching medicine details:', error);
@@ -319,18 +323,17 @@
 </script>
 
 {#if medicine}
-<div class="max-w-80 mx-auto sm:max-w-full md:max-w-full">
-
+	<div class="mx-auto max-w-80 sm:max-w-full md:max-w-full">
 		<div class="flex max-w-full flex-col gap-6 sm:flex-row">
-			<Card.Root class="w-full rounded-lg border-none shadow-xl sm:flex-1">
-				<Card.Content class="flex flex-col items-center justify-center p-0">
+			<Card.Root class="w-full rounded-lg border-none shadow-none sm:flex-1">
+				<Card.Content class="flex flex-col items-center justify-center bg-primary-foreground p-0">
 					<img
 						src={medicine.imageUrl || '/placeholder.png'}
 						alt={medicine.name}
 						class="w-full max-w-[250px] rounded-lg object-contain"
 					/>
 
-					<div class="hidden w-full rounded-lg bg-white p-6 shadow-lg sm:block">
+					<div class="hidden w-full rounded-lg p-6 sm:block">
 						<h2 class="text-2xl font-semibold text-gray-800">Review</h2>
 
 						<div class="my-4 flex flex-row items-center justify-between">
@@ -377,7 +380,7 @@
 							<!-- Review Dialog -->
 							<Dialog.Root bind:open={isReviewDialogOpen}>
 								<Dialog.Trigger
-									class="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700"
+									class={buttonVariants({ variant: 'default' })}
 									onclick={(event) => {
 										if (!user) {
 											showLogin('You need to be logged in to be able to review.'); // Show login dialog if not logged in
@@ -572,12 +575,12 @@
 				</Card.Content>
 			</Card.Root>
 
-			<Card.Root class="w-full rounded-lg border-none shadow-xl sm:flex-1">
+			<Card.Root class="w-full rounded-lg border-none bg-primary-foreground shadow-none sm:flex-1">
 				<Card.Content class="mx-auto flex flex-col items-start justify-start space-y-4 p-6">
 					<span class="text-3xl font-medium">{medicine.name}</span>
 
 					<!-- Star Rating -->
-					<div class="flex items-center gap-2">
+					<!-- <div class="flex items-center gap-2">
 						{#each Array(5) as _, i}
 							<Star
 								size={24}
@@ -585,15 +588,15 @@
 							/>
 						{/each}
 						<span class="text-sm text-gray-500">({totalReviews})</span>
-					</div>
+					</div> -->
 
-					<span class="text-2xl font-medium text-green-600">₱{medicine.price}</span>
+					<span class="text-2xl font-medium ">₱{medicine.price}</span>
 					<span class="text-sm text-gray-500">Stock: {medicine.stock}</span>
 
 					<Separator class="my-4" />
 
 					<span class="text-base font-medium">Quantity</span>
-					<div class="flex gap-4">
+					<div class="flex gap-4 justify-between w-full">
 						<Input
 							type="number"
 							bind:value={quantity}
@@ -603,7 +606,7 @@
 							disabled={medicine?.stock === 0}
 						/>
 						<Button
-							class="flex-1 rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+							class="flex-1 bg-orange-400 px-4 py-2 text-white hover:bg-orange-300 "
 							onclick={() => addToCart(medicine, quantity)}
 							disabled={loading[medicine.id]}
 						>
@@ -620,10 +623,10 @@
 				</Card.Content>
 			</Card.Root>
 
-			<Card.Root class="block sm:hidden">
+			<Card.Root class="block sm:hidden shadow-none border-none">
 				<Card.Content class="mx-auto flex flex-col items-center justify-center p-0">
 					<!-- Mobile-only content -->
-					<div class="w-full rounded-lg bg-white p-6 shadow-lg">
+					<div class="w-full rounded-lg bg-primary-foreground p-6">
 						<h2 class="text-2xl font-semibold text-gray-800">Review</h2>
 
 						<div class="my-4 flex-col">
@@ -866,11 +869,11 @@
 			</Card.Root>
 		</div>
 
-		<Card.Root class="mt-2 bg-transparent shadow-none border-none">
+		<Card.Root class="mt-2 border-none bg-transparent shadow-none border-t-2 border-t-black">
 			<Card.Content><Card.Title>You may also like</Card.Title></Card.Content>
 		</Card.Root>
 		<div class="mt-6 flex w-full justify-center">
-			<Carousel.Root class="w-full">
+			<Carousel.Root class="w-full bg-primary-foreground">
 				<Carousel.Content class="-ml-1">
 					{#each medicines.filter((m) => m.id !== currentId) as medicine, i (i)}
 						<Carousel.Item
@@ -889,10 +892,17 @@
 										/>
 									</Card.Content>
 									<Card.Footer class="flex flex-col items-start space-y-2 p-4">
-										<span class="text-lg font-medium">{medicine.name}</span>
+										<div class="min-h-[60px] flex-grow">
+											<span class="text-sm font-normal">
+												<span class="font-semibold uppercase">{medicine.brand}</span>
+												{medicine.generic}
+												{medicine.dosage}
+												{medicine.form}
+											</span>
+										</div>
 										<span class="text-lg font-medium">₱{medicine.price}</span>
 										<Button
-											class="w-full bg-blue-600 py-2 text-white"
+											class="w-full py-2 text-white bg-orange-400 hover:bg-orange-300"
 											onclick={(e) => {
 												e.stopPropagation();
 												addToCart(medicine, 1);
@@ -902,7 +912,7 @@
 											{#if loading[medicine.id]}
 												Adding...
 											{:else}
-												Add To Cart
+											Add to Cart
 											{/if}
 										</Button>
 									</Card.Footer>

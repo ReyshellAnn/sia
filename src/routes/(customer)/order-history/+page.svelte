@@ -232,59 +232,54 @@
 			<Table.Row>
 				<Table.Head class="p-4 text-left font-semibold">Medicines</Table.Head>
 				<Table.Head class="p-4 text-left font-semibold">Price</Table.Head>
-				<Table.Head class="p-4 text-left font-semibold">Quantity</Table.Head>
-				<Table.Head class="p-4 text-left font-semibold">Status</Table.Head>
-				<Table.Head class="hidden p-4 text-left font-semibold sm:table-cell"
-					>Date</Table.Head
-				>
-				<Table.Head class="p-4 text-left font-semibold">Pickup Time</Table.Head>
+				<Table.Head class="hidden p-4 text-left font-semibold md:table-cell">Quantity</Table.Head>
+				<Table.Head class="hidden p-4 text-left font-semibold md:table-cell">Status</Table.Head>
+				<Table.Head class="hidden p-4 text-left font-semibold md:table-cell">Date</Table.Head>
+				<Table.Head class="hidden p-4 text-left font-semibold sm:table-cell">Pickup Time</Table.Head>
 			</Table.Row>
 		</Table.Header>
 
 		<Table.Body class="rounded-xl p-0">
 			{#each $orders as order (order.id)}
-				<Table.Row
-					class="transition-all duration-300 odd:bg-white/50 even:bg-gray-100/50 hover:bg-blue-100/50"
-				>
-
-					<Table.Cell class="p-4">
-						<ul class="space-y-2">
-							{#each order.items as item}
-								<li class="flex items-center gap-3">
-									<img
-										src={item.imageUrl}
-										alt={item.name}
-										class="h-12 w-12 rounded-lg border border-gray-200 shadow-sm"
-									/>
-									<span class="text-sm text-gray-700"
-										>{item.name}</span
-									>
-								</li>
-							{/each}
-						</ul>
-					</Table.Cell>
-
-					{#each order.items as item}
-						<!-- Price Column -->
-						<Table.Cell class="p-4 text-gray-700">₱{item.price.toFixed(2)}</Table.Cell>
-
-						<!-- Quantity Column -->
-						<Table.Cell class="p-4 text-gray-700">{item.quantity}</Table.Cell>
+			<Table.Row class="transition-all duration-300 odd:bg-white/50 even:bg-gray-100/50 hover:bg-blue-100/50">
+				<!-- Medicines Column -->
+				<Table.Cell class="p-4">
+					<ul class="space-y-2">
+						{#each order.items as item}
+							<li class="flex items-center gap-3">
+								<img src={item.imageUrl} alt={item.name} class="h-12 w-12 rounded-lg border border-gray-200 shadow-sm" />
+								<span class="text-sm text-gray-700">{item.name}</span>
+							</li>
 						{/each}
-					<Table.Cell class="p-4">
-						<span
-							class={`rounded-full px-4 py-1 text-xs font-semibold shadow-md transition-all duration-300
-									${order.status === 'Pending' ? 'bg-yellow-400/80 text-black' : ''}
-									${order.status === 'Completed' ? 'bg-green-500/80 text-white' : ''}
-									${order.status === 'Cancelled' ? 'bg-red-500/80 text-white' : ''}`}
-						>
-							{order.status}
-						</span>
-					</Table.Cell>
-
-					<Table.Cell class="hidden p-4 text-gray-700 sm:table-cell">{order.createdAt}</Table.Cell>
-					<Table.Cell class="p-4 text-gray-700">{order.pickupTime}</Table.Cell>
-				</Table.Row>
+					</ul>
+				</Table.Cell>
+	
+				<!-- Price Column -->
+				{#each order.items as item}
+					<Table.Cell class="p-4 text-gray-700">₱{item.price.toFixed(2)}</Table.Cell>
+	
+					<!-- Quantity Column -->
+					<Table.Cell class="hidden p-4 text-gray-700 md:table-cell">{item.quantity}</Table.Cell>
+				{/each}
+	
+				<!-- Status Column -->
+				<Table.Cell class="hidden p-4 md:table-cell">
+					<span
+						class={`rounded-full px-4 py-1 text-xs font-semibold shadow-md transition-all duration-300
+							${order.status === 'Pending' ? 'bg-yellow-400/80 text-black' : ''}
+							${order.status === 'Completed' ? 'bg-green-500/80 text-white' : ''}
+							${order.status === 'Cancelled' ? 'bg-red-500/80 text-white' : ''}`}
+					>
+						{order.status}
+					</span>
+				</Table.Cell>
+	
+				<!-- Date Column (Hidden on Mobile, Visible on MD+) -->
+				<Table.Cell class="hidden p-4 text-gray-700 md:table-cell">{order.createdAt}</Table.Cell>
+	
+				<!-- Pickup Time Column (Hidden on Mobile, Visible on SM+) -->
+				<Table.Cell class="hidden p-4 text-gray-700 sm:table-cell">{order.pickupTime}</Table.Cell>
+			</Table.Row>
 			{/each}
 		</Table.Body>
 	</Table.Root>

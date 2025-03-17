@@ -204,7 +204,7 @@
 
 <div class="flex flex-wrap gap-6">
 	<div class="flex flex-[2] flex-col">
-		<Card.Root class="bg-white rounded-lg shadow-md p-4 w-full">
+		<Card.Root class="bg-primary-foreground rounded-lg shadow-none border-none p-4 w-full">
 			<span class="p-4 text-center font-medium text-lg text-gray-700">
 				🛒 Your Cart
 			</span>
@@ -217,7 +217,7 @@
 					{#each cartItems as item}
 						<div class="flex flex-row justify-between items-center py-4 border-b border-gray-300">
 							<div class="flex flex-row items-center space-x-4 w-2/5">
-								<img src={item.imageUrl} alt="Medicine" class="w-20 h-20 object-cover rounded-md" />
+								<img src={item.imageUrl} alt="Medicine" class="w-20 object-cover rounded-md" />
 								<span>{item.name}</span>
 							</div>
 

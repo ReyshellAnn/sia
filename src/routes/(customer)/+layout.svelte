@@ -18,6 +18,7 @@
 	import Settings from 'lucide-svelte/icons/settings';
 	import User from 'lucide-svelte/icons/user';
 	import LogOut from 'lucide-svelte/icons/log-out';
+	import Search from 'lucide-svelte/icons/search';
 
 	import { user } from '$lib/stores/authStore'; // Import the user store
 	import { auth } from '$lib/firebase';
@@ -107,16 +108,22 @@
 		>
 			<Sidebar.Trigger class="-ml-1" />
 			<!-- svelte-ignore event_directive_deprecated -->
-			<form on:submit|preventDefault={() => goToSearchPage()}>
+			<form on:submit|preventDefault={() => goToSearchPage()} class="relative w-full max-w-[100px] sm:max-w-xs">
+				<!-- Search Icon Inside Input -->
+				<Search class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+			
 				<input
 					type="text"
-					placeholder="Search medicine..."
+					placeholder="Search..."
 					bind:value={searchQuery}
-					class="w-full rounded-md border p-2 sm:max-w-xs"
+					class="w-full bg-transparent border-b border-black p-2 pl-8 focus:outline-none transition-all duration-300 text-sm"
 				/>
-				<Button type="submit" class="hidden">Search</Button>
-				<!-- Hidden submit button for accessibility -->
+			
+				<Button type="submit" class="hidden">Search</Button> <!-- Hidden button for accessibility -->
 			</form>
+			
+			
+			
 
 			<div class="ml-auto flex items-center gap-6">
 				{#if $user}

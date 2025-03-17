@@ -164,11 +164,11 @@
 </script>
 
 <!-- Filter UI -->
-<div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+<div class="flex flex-wrap gap-2 p-2 sm:flex-row sm:items-center sm:justify-end">
 	<select
 		bind:value={selectedCategory}
 		on:change={filterMedicines}
-		class="w-full rounded-md border p-2 sm:w-auto"
+		class="min-w-[140px] max-w-[180px] flex-1 rounded-md border p-1 text-sm"
 	>
 		<option value="">All Categories</option>
 		<option value="Allergy & Antihistamines">Allergy & Antihistamines</option>
@@ -187,7 +187,7 @@
 	<select
 		bind:value={selectedPriceFilter}
 		on:change={filterMedicines}
-		class="w-full rounded-md border p-2 sm:w-auto"
+		class="min-w-[140px] max-w-[180px] flex-1 rounded-md border p-1 text-sm"
 	>
 		<option value="">Sort by Price</option>
 		<option value="lowToHigh">Price: Low to High</option>
@@ -197,7 +197,7 @@
 
 <!-- Display search results -->
 <div class="p-4">
-	<h2 class="text-xl font-semibold">Search Results for: {searchQuery}</h2>
+	<h2 class="text-xl font-semibold mb-2">Search Results for: {searchQuery}</h2>
 	{#if medicines.length === 0}
 		<p>No results found</p>
 	{/if}

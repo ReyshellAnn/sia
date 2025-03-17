@@ -25,7 +25,6 @@
 	let selectedCategory = '';
 	let priceSort: string = '';
 
-
 	let categories: string[] = [];
 
 	const goToSearchPage = () => {
@@ -185,11 +184,12 @@
 </script>
 
 <!-- Filter UI -->
-<div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-2">
+<div class="flex flex-wrap gap-2 p-2 sm:flex-row sm:items-center sm:justify-end">
+	<!-- Category Filter -->
 	<select
 		bind:value={selectedCategory}
 		on:change={filterMedicines}
-		class="w-full rounded-md border p-2 sm:w-auto"
+		class="min-w-[140px] max-w-[180px] flex-1 rounded-md border p-1 text-sm"
 	>
 		<option value="">All Categories</option>
 		<option value="Allergy & Antihistamines">Allergy & Antihistamines</option>
@@ -203,11 +203,11 @@
 		<option value="Women's Health">Women's Health</option>
 	</select>
 
-	<!-- Price Filter with Placeholder -->
+	<!-- Price Filter -->
 	<select
 		bind:value={priceSort}
 		on:change={filterMedicines}
-		class="w-full rounded-md border p-2 sm:w-auto"
+		class="min-w-[140px] max-w-[180px] flex-1 rounded-md border p-1 text-sm"
 	>
 		<option value="">Sort by Price</option>
 		<option value="ascending">Price: Low to High</option>
@@ -215,21 +215,24 @@
 	</select>
 </div>
 
-<!-- Medicine Cards -->
-<div class="flex flex-wrap justify-center sm:justify-start">
-	{#each filteredMedicines as medicine}
-	<Card.Root class="flex w-80 md:w-60 flex-col overflow-hidden border-b-1 border-b-gray-100 border-solid bg-primary-foreground p-4 rounded-none border-l-0 border-r-0">
 
+
+<!-- Medicine Cards -->
+<div class="flex flex-wrap justify-start border-t border-t-gray-300 w-full max-w-[1220px] mx-auto">
+
+	{#each filteredMedicines as medicine}
+		<Card.Root
+			class="border-b-1 flex w-80 flex-col overflow-hidden rounded-none border-l-0 border-r-0 border-t-0 border-solid border-b-gray-300 bg-primary-foreground p-4 md:w-[305px] shadow-none"
+		>
 			<Card.Content
 				class="mx-auto flex items-center justify-center p-0 transition duration-200 hover:cursor-pointer"
 				onclick={() => goToMedicine(medicine.id)}
 			>
-			<img
-			src={medicine.image}
-			alt="Medicine"
-			class="w-full rounded-t-lg object-contain transition duration-200 group-hover:opacity-80"
-		  />
-		  
+				<img
+					src={medicine.image}
+					alt="Medicine"
+					class="w-full rounded-t-lg object-contain transition duration-200 group-hover:opacity-80"
+				/>
 			</Card.Content>
 
 			<div class="flex flex-grow flex-col space-y-4 px-3">
@@ -237,10 +240,12 @@
 				<div class="min-h-[60px] flex-grow">
 					<span class="text-sm font-normal">
 						<span class="font-semibold uppercase">{medicine.brand}</span>
-						{medicine.generic} {medicine.dosage} {medicine.form}
+						{medicine.generic}
+						{medicine.dosage}
+						{medicine.form}
 					</span>
 				</div>
-			
+
 				<!-- Rating Stars -->
 				<div class="flex items-center gap-1">
 					{#each Array(5) as _, i}
@@ -249,21 +254,21 @@
 							class={i < Math.round(medicine.averageRating) ? 'text-yellow-400' : 'text-gray-300'}
 						/>
 					{/each}
-					<span class="text-gray-500 text-[10px]">({medicine.totalReviews})</span>
+					<span class="text-[10px] text-gray-500">({medicine.totalReviews})</span>
 				</div>
-			
+
 				<!-- Ensuring Price & "Add to Cart" Aligns Properly -->
-				<div class="flex flex-col flex-grow justify-between">
+				<div class="flex flex-grow flex-col justify-between">
 					<span class="text-lg font-medium text-gray-600">
 						<span class="font-normal">₱</span>
 						{medicine.price % 1 === 0 ? `${medicine.price}.00` : medicine.price}
 					</span>
-			
-					<div class="flex flex-row justify-between items-end">
+
+					<div class="flex flex-row items-end justify-between">
 						<span class="text-sm text-gray-500">
 							{medicine.sold > 0 ? `${medicine.sold} Sold` : ''}
 						</span>
-			
+
 						<Button
 							class="h-8 bg-orange-400 hover:bg-orange-300"
 							onclick={() => addToCart(medicine)}
@@ -280,7 +285,6 @@
 					</div>
 				</div>
 			</div>
-			
 		</Card.Root>
 	{/each}
 </div>
