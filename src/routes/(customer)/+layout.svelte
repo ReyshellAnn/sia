@@ -108,7 +108,7 @@
 		>
 			<Sidebar.Trigger class="-ml-1" />
 			<!-- svelte-ignore event_directive_deprecated -->
-			<form on:submit|preventDefault={() => goToSearchPage()} class="relative w-full max-w-[100px] sm:max-w-xs">
+			<form on:submit|preventDefault={() => goToSearchPage()} class="relative w-full max-w-[200px] sm:max-w-xs">
 				<!-- Search Icon Inside Input -->
 				<Search class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
 			

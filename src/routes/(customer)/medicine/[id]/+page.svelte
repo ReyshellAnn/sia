@@ -869,7 +869,7 @@
 			</Card.Root>
 		</div>
 
-		<Card.Root class="mt-2 border-none bg-transparent shadow-none border-t-2 border-t-black">
+		<Card.Root class="mt-2 border-l-0 border-r-0 border-b-0 bg-transparent shadow-none border-t-1 border-t-gray-300 rounded-none">
 			<Card.Content><Card.Title>You may also like</Card.Title></Card.Content>
 		</Card.Root>
 		<div class="mt-6 flex w-full justify-center">

@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { get } from 'svelte/store';
-	
+
 	import { user } from '$lib/stores/authStore';
 
 	import {
@@ -83,23 +83,23 @@
 
 	// Ensure user is authenticated and fetch cart items after authentication
 	onMount(async () => {
-	const currentUser = get(user);
-	if (!currentUser) return; // Just in case, but should never happen due to +page.ts
+		const currentUser = get(user);
+		if (!currentUser) return; // Just in case, but should never happen due to +page.ts
 
-	try {
-		const q = query(collection(db, 'cart'), where('userId', '==', currentUser.uid));
-		const querySnapshot = await getDocs(q);
+		try {
+			const q = query(collection(db, 'cart'), where('userId', '==', currentUser.uid));
+			const querySnapshot = await getDocs(q);
 
-		cartItems = querySnapshot.docs.map((doc) => ({
-			id: doc.id,
-			...doc.data(),
-			imageUrl: doc.data().imageUrl || '/placeholder.png'
-		}));
-		console.log('Cart items retrieved successfully:', cartItems);
-	} catch (error) {
-		console.error('Error fetching cart items:', error);
-	}
-});
+			cartItems = querySnapshot.docs.map((doc) => ({
+				id: doc.id,
+				...doc.data(),
+				imageUrl: doc.data().imageUrl || '/placeholder.png'
+			}));
+			console.log('Cart items retrieved successfully:', cartItems);
+		} catch (error) {
+			console.error('Error fetching cart items:', error);
+		}
+	});
 
 	// Handle item quantity update
 	const updateQuantity = async (itemId: string, newQuantity: number) => {
@@ -158,13 +158,18 @@
 	const proceedToPickup = async () => {
 		loading.proceed = true; // Show loading state for proceed to pickup
 		try {
+			const currentUser = get(user); // ✅ Get the user from the store
+			if (!currentUser || !currentUser.uid) {
+				throw new Error('User is not logged in or UID is missing.');
+			}
+
 			// Generate a unique pickup ID
 			const pickupId = `pickup_${Date.now()}`;
 
 			// Consolidate all cart items
 			const pickupData = {
 				id: pickupId,
-				userId: user.uid,
+				userId: currentUser.uid,
 				createdAt: new Date().toISOString(),
 				pickupTime: pickupOption === 'now' ? 'ASAP' : scheduledPickupTime,
 				items: cartItems.map((item) => ({
@@ -204,10 +209,8 @@
 
 <div class="flex flex-wrap gap-6">
 	<div class="flex flex-[2] flex-col">
-		<Card.Root class="bg-primary-foreground rounded-lg shadow-none border-none p-4 w-full">
-			<span class="p-4 text-center font-medium text-lg text-gray-700">
-				🛒 Your Cart
-			</span>
+		<Card.Root class="w-full rounded-lg border-none bg-primary-foreground p-4 shadow-none">
+			<span class="p-4 text-center text-lg font-medium text-gray-700"> 🛒 Your Cart </span>
 			<Card.Content>
 				{#if cartItems.length === 0}
 					<p class="text-center text-lg text-gray-500">
@@ -215,18 +218,18 @@
 					</p>
 				{:else}
 					{#each cartItems as item}
-						<div class="flex flex-row justify-between items-center py-4 border-b border-gray-300">
-							<div class="flex flex-row items-center space-x-4 w-2/5">
-								<img src={item.imageUrl} alt="Medicine" class="w-20 object-cover rounded-md" />
+						<div class="flex flex-row items-center justify-between border-b border-gray-300 py-4">
+							<div class="flex w-2/5 flex-col items-center space-x-4 lg:flex-row">
+								<img src={item.imageUrl} alt="Medicine" class="w-20 rounded-md object-cover" />
 								<span>{item.name}</span>
 							</div>
 
-							<div class="flex flex-col items-center w-1/4">
+							<div class="flex w-1/4 flex-col items-center">
 								<span class="text-sm text-gray-600">Price</span>
 								<span class="text-sm font-semibold text-gray-600">₱{item.price}</span>
 							</div>
 
-							<div class="flex flex-col items-center w-1/4">
+							<div class="flex w-1/4 flex-col items-center">
 								<span class="text-sm text-gray-600">Quantity</span>
 								<Input
 									type="number"
@@ -238,7 +241,7 @@
 											updateQuantity(item.id, +target.value); // Safely access the value
 										}
 									}}
-									class="border rounded-sm p-2 w-24 text-center"
+									class="w-24 rounded-sm border p-2 text-center"
 								/>
 							</div>
 
@@ -266,27 +269,27 @@
 		</Card.Root>
 	</div>
 
-	<Card.Root class="bg-white rounded-lg shadow-md p-4 flex-1">
+	<Card.Root class="flex-1 rounded-lg bg-white p-4 shadow-md">
 		<Card.Content class="flex flex-col space-y-4">
 			<span class="text-xl font-medium">🛒 Cart Total</span>
 			<Separator class="border-t border-gray-300" />
 
-			<div class="flex justify-between items-center">
+			<div class="flex items-center justify-between">
 				<span class="text-lg font-medium">Total:</span>
 				<span class="text-lg font-semibold text-green-700">
 					₱{cartItems.reduce((total, item) => total + item.price * item.quantity, 0)}
 				</span>
 			</div>
 			<span class="font-medium text-gray-700">Select Pickup Option:</span>
-			<select bind:value={pickupOption} class="rounded border p-2 w-full">
+			<select bind:value={pickupOption} class="w-full rounded border p-2">
 				<option value="now">Pickup Now</option>
 				<option value="later">Schedule Pickup</option>
 			</select>
 
 			{#if pickupOption === 'later'}
 				<div>
-					<span class="font-medium text-gray-700" >Select Pickup Time:</span>
-					<select bind:value={scheduledPickupTime} class="rounded border p-2 w-full">
+					<span class="font-medium text-gray-700">Select Pickup Time:</span>
+					<select bind:value={scheduledPickupTime} class="w-full rounded border p-2">
 						{#each timeSlots as time}
 							<option value={time.value} disabled={disabledTimes.includes(time.value)}>
 								{time.label}
@@ -301,23 +304,27 @@
 				disabled={(pickupOption === 'later' && !scheduledPickupTime) ||
 					cartItems.length === 0 ||
 					loading.proceed}
-							class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-400"
-							>
+				class="rounded-md bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:bg-gray-400"
+			>
 				{#if loading.proceed}
 					Proceeding...
 				{:else}
 					Proceed to Pickup
 				{/if}
 			</Button>
-			<Button variant="secondary" onclick={() => goto('/')} class="w-full py-2 px-4 bg-gray-200 text-black rounded-md hover:bg-gray-300">
+			<Button
+				variant="secondary"
+				onclick={() => goto('/')}
+				class="w-full rounded-md bg-gray-200 px-4 py-2 text-black hover:bg-gray-300"
+			>
 				<ArrowLeft />Return to Shopping
 			</Button>
 			<Button
 				variant="secondary"
 				disabled={cartItems.length === 0 || loading.clearCart}
 				onclick={clearCart}
-				class="w-full py-2 px-4 bg-gray-200 text-black rounded-md hover:bg-gray-300 disabled:bg-gray-400"
-				>
+				class="w-full rounded-md bg-gray-200 px-4 py-2 text-black hover:bg-gray-300 disabled:bg-gray-400"
+			>
 				{#if loading.clearCart}
 					Clearing...
 				{:else}

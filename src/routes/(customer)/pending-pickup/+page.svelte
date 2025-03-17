@@ -53,8 +53,8 @@
 	});
 </script>
 
-<div class="container p-6 bg-white shadow-lg rounded-lg min-h flex flex-col">
-	<span class="text-2xl font-semibold">📦 Current Pickups</span>
+<div class="container p-6 bg-primary-foreground shadow-none rounded-none border-none min-h flex flex-col">
+	<span class="text-2xl font-semibold">📦 Pending Pickups</span>
 
 	{#if loading}
 		<div class="text-center text-lg text-gray-500 mt-4">Loading...</div>
@@ -72,26 +72,31 @@
 				<Card.Root class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
 					<Card.Content>
 						<div class="flex flex-col gap-2 p-4">
-							<span class="text-sm font-semibold text-gray-700">Pickup Time: {order.pickupTime}</span>
+							<span class="text-lg font-semibold text-gray-700"><span class="font-normal text-sm">Order ID:</span> #{order.id.replace("pickup_", "")}</span>
+							<span class="text-base font-semibold text-gray-700"><span class="font-normal text-sm">Pickup Time:</span> {order.pickupTime}</span>
 
 							<!-- Display each item in the order -->
 							{#each order.items as item}
-								<div class="flex items-center justify-between border-b border-gray-300 pb-4">
-									<div class="flex flex-row space-x-4">
-										<img src={item.imageUrl} alt={item.name} class="w-20 h-20 object-cover rounded-md"/>
-										<span class="p-8 text-sm text-gray-700 font-semibold">{item.name}</span>
-									</div>
-
-									<div class="flex flex-col items-center text-sm text-gray-600">
-										<span class="text-sm text-gray-600">Qty</span>
-										<span class="text-sm text-gray-700 font-semibold">{item.quantity}</span>
-									</div>
-
-									<div class="flex flex-col items-center text-sm text-gray-600">
-										<span class="text-sm text-gray-600">Price</span>
-										<span class="text-sm text-gray-700 font-semibold">₱{item.price}</span>
-									</div>
+							<div class="flex items-center justify-between border-b border-gray-300 pb-4">
+								<!-- Item Image & Name -->
+								<div class="flex flex-col lg:flex-row items-center space-x-4 flex-1">
+									<img src={item.imageUrl} alt={item.name} class="w-20 object-cover rounded-md"/>
+									<span class="text-sm text-gray-700 font-semibold">{item.name}</span>
 								</div>
+							
+								<!-- Quantity Column -->
+								<div class="flex flex-col items-center flex-1">
+									<span class="text-xs text-gray-500">Qty</span>
+									<span class="text-sm text-gray-700 font-semibold">{item.quantity}</span>
+								</div>
+							
+								<!-- Price Column -->
+								<div class="flex flex-col items-center flex-1">
+									<span class="text-xs text-gray-500">Price</span>
+									<span class="text-sm text-gray-700 font-semibold">₱{item.price}</span>
+								</div>
+							</div>
+							
 							{/each}
 
 							<!-- Display order total -->
