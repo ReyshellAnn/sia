@@ -6,6 +6,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Skeleton } from "$lib/components/ui/skeleton/index.js";
 	import { toast } from 'svelte-sonner';
 
 	import { collection, getDocs, addDoc, updateDoc, getDoc } from 'firebase/firestore';
@@ -195,6 +196,36 @@
 	</select>
 </div>
 
+{#if medicines.length === 0}
+<!-- Skeleton Loader -->
+<div class="flex flex-wrap justify-start border-t border-gray-300 w-full max-w-[1220px] mx-auto">
+	{#each Array(8) as _}
+	  <div class="w-80 md:w-[305px] p-4 border-b border-gray-300">
+		<!-- Image Skeleton -->
+		<Skeleton class="w-full h-[180px]" />
+  
+		<div class="mt-3 space-y-10">
+		  <!-- Medicine Name Skeleton -->
+		  <Skeleton class="h-4 w-[70%]" />
+  
+		  <!-- Rating Skeleton -->
+		  <div class="flex items-center gap-1">
+			{#each Array(5) as _} <Skeleton class="size-4 rounded-full" /> {/each}
+			<Skeleton class="h-3 w-6" />
+		  </div>
+		  
+		  <div class="flex flex-row justify-between">
+					  <!-- Price & Button Skeleton -->
+					  <Skeleton class="h-5 w-[60px]" />
+					  <Skeleton class="h-8 w-8 rounded-md mt-2" />
+		  </div>
+
+		</div>
+	  </div>
+	{/each}
+  </div>
+{:else}
+
 <!-- Display search results -->
 <div class="p-4">
 	<h2 class="text-xl font-semibold mb-2">Search Results for: {searchQuery}</h2>
@@ -269,6 +300,7 @@
 		{/each}
 	</div>
 </div>
+{/if}
 
 {#if $showLoginDialog}
 	<Dialog.Root bind:open={$showLoginDialog}>

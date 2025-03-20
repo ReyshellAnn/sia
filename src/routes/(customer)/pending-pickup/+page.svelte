@@ -101,8 +101,8 @@
 
 							<!-- Display order total -->
 							<div class="flex justify-end items-center mt-4">
-								<span class="text-lg font-semibold text-gray-600">Total:
-								<span class="text-lg font-semibold text-green-700">₱{order.orderTotal}</span>
+								<span class="text-lg font-medium text-gray-700">Total:
+								<span class="text-2xl font-bold text-orange-400">₱{order.orderTotal}</span>
 							</div>
 						</div>
 					</Card.Content>

@@ -22,6 +22,7 @@
 
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Skeleton } from "$lib/components/ui/skeleton/index.js";
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 
@@ -32,10 +33,12 @@
 	let pickupOption = 'now'; // Default selection
 	let scheduledPickupTime = ''; // Empty by default
 	let loading: {
+		cart: boolean; 
 		proceed: boolean;
 		clearCart: boolean;
 		removeItem: string | null;
 	} = {
+		cart: true,
 		proceed: false,
 		clearCart: false,
 		removeItem: null
@@ -84,7 +87,9 @@
 	// Ensure user is authenticated and fetch cart items after authentication
 	onMount(async () => {
 		const currentUser = get(user);
-		if (!currentUser) return; // Just in case, but should never happen due to +page.ts
+		if (!currentUser) return;
+
+		loading.cart = true; // Start loading
 
 		try {
 			const q = query(collection(db, 'cart'), where('userId', '==', currentUser.uid));
@@ -98,7 +103,9 @@
 			console.log('Cart items retrieved successfully:', cartItems);
 		} catch (error) {
 			console.error('Error fetching cart items:', error);
-		}
+		}finally {
+        loading.cart = false; // Stop loading after fetching
+    }
 	});
 
 	// Handle item quantity update
@@ -211,25 +218,55 @@
 	<div class="flex flex-[2] flex-col">
 		<Card.Root class="w-full rounded-lg border-none bg-primary-foreground p-4 shadow-none">
 			<span class="p-4 text-center text-lg font-medium text-gray-700"> 🛒 Your Cart </span>
-			<Card.Content>
-				{#if cartItems.length === 0}
+			<Card.Content class="p-0 md:p-7">
+				{#if cartItems.length === 0 && !loading.cart}
 					<p class="text-center text-lg text-gray-500">
 						Your cart is empty. Start adding items to your cart!
 					</p>
-				{:else}
+				{:else if loading.cart}
+				<div class="flex flex-wrap gap-6">
+					<!-- Cart Items Skeleton -->
+					<div class="flex flex-[2] flex-col">
+					  <div class="w-full rounded-lg border-none  p-4">
+						{#each Array(3) as _} <!-- Show 3 skeleton items -->
+						  <div class="flex flex-row items-center justify-between border-b border-gray-200 py-4">
+							<div class="flex w-2/5 flex-col items-center space-x-4 lg:flex-row">
+							  <Skeleton class="w-20 h-20 rounded-md" />
+							  <Skeleton class="h-4 w-[120px]" />
+							</div>
+				  
+							<div class="flex w-1/4 flex-col items-center">
+							  <Skeleton class="h-4 w-[60px]" />
+							  <Skeleton class="h-5 w-[40px]" />
+							</div>
+				  
+							<div class="flex w-1/4 flex-col items-center">
+							  <Skeleton class="h-4 w-[60px]" />
+							  <Skeleton class="h-8 w-16 rounded-sm" />
+							</div>
+				  
+							<div class="flex flex-col items-center">
+							  <Skeleton class="h-8 w-8 rounded-full" />
+							</div>
+						  </div>
+						{/each}
+					  </div>
+					</div>
+				  </div>
+				  {:else}
 					{#each cartItems as item}
 						<div class="flex flex-row items-center justify-between border-b border-gray-300 py-4">
 							<div class="flex w-2/5 flex-col items-center space-x-4 lg:flex-row">
 								<img src={item.imageUrl} alt="Medicine" class="w-20 rounded-md object-cover" />
-								<span>{item.name}</span>
+								<span class="text-xs md:text-sm">{item.name}</span>
 							</div>
 
-							<div class="flex w-1/4 flex-col items-center">
+							<div class="flex w-1/2 flex-col items-center">
 								<span class="text-sm text-gray-600">Price</span>
 								<span class="text-sm font-semibold text-gray-600">₱{item.price}</span>
 							</div>
 
-							<div class="flex w-1/4 flex-col items-center">
+							<div class="flex w-full md:w-1/4 flex-col items-center">
 								<span class="text-sm text-gray-600">Quantity</span>
 								<Input
 									type="number"
@@ -241,7 +278,7 @@
 											updateQuantity(item.id, +target.value); // Safely access the value
 										}
 									}}
-									class="w-24 rounded-sm border p-2 text-center"
+									class="w-10 md:w-24 rounded-sm border p-2 text-center"
 								/>
 							</div>
 
@@ -276,7 +313,7 @@
 
 			<div class="flex items-center justify-between">
 				<span class="text-lg font-medium">Total:</span>
-				<span class="text-lg font-semibold text-green-700">
+				<span class="text-lg font-semibold text-black">
 					₱{cartItems.reduce((total, item) => total + item.price * item.quantity, 0)}
 				</span>
 			</div>
@@ -304,7 +341,7 @@
 				disabled={(pickupOption === 'later' && !scheduledPickupTime) ||
 					cartItems.length === 0 ||
 					loading.proceed}
-				class="rounded-md bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:bg-gray-400"
+				class="rounded-md bg-orange-400 px-4 py-2 font-semibold text-white hover:bg-orange-300 disabled:bg-gray-400"
 			>
 				{#if loading.proceed}
 					Proceeding...
