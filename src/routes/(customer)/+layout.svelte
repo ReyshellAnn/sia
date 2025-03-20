@@ -75,6 +75,7 @@
 				// Step 2: Sign out from Firebase
 				console.log('Signing out from Firebase...');
 				await auth.signOut();
+				goto('/');
 			} else {
 				console.error('Error during logout:', result.error);
 				// Optionally show a toast error or other UI feedback here
