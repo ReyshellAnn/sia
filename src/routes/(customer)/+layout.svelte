@@ -117,7 +117,7 @@
 					type="text"
 					placeholder="Search..."
 					bind:value={searchQuery}
-					class="w-full bg-transparent border-b border-black p-2 pl-8 focus:outline-none transition-all duration-300 text-sm"
+					class="w-full bg-transparent border-b border-gray-400 p-2 pl-8 focus:outline-none transition-all duration-300 text-sm"
 				/>
 			
 				<Button type="submit" class="hidden">Search</Button> <!-- Hidden button for accessibility -->

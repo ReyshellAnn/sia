@@ -202,6 +202,7 @@
 		<option value="First Aid & Wound Care">First Aid & Wound Care</option>
 		<option value="Heart Health">Heart Health</option>
 		<option value="Women's Health">Women's Health</option>
+		<option value="Pain Reliever">Pain Reliever</option>
 	</select>
 
 	<!-- Price Filter -->
